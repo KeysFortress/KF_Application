@@ -84,7 +84,7 @@ packages:
   domain:
     dependency: transitive
     description:
-      path: "../domain"
+      path: "../KF_Domain"
       relative: true
     source: path
     version: "0.0.1"
@@ -218,7 +218,7 @@ packages:
   infrastructure:
     dependency: "direct main"
     description:
-      path: "../Infrastructure"
+      path: "../KF_Infrastructure"
       relative: true
     source: path
     version: "0.0.1"
