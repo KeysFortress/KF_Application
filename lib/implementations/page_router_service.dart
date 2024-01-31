@@ -2,6 +2,7 @@ import 'package:domain/models/core_router.dart';
 import 'package:domain/models/enums.dart';
 import 'package:domain/models/page_route.dart';
 import 'package:domain/models/transition_data.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -148,6 +149,25 @@ class PageRouterService implements IPageRouterService {
                 ),
               ),
             ));
+  }
+
+  @override
+  openDialog(Widget content, BuildContext context,
+      {double? width, double? height}) {
+    _currentContext = context;
+    showDialog(
+      barrierDismissible: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      context: context,
+      builder: (context) => AlertDialog(
+        content: FractionallySizedBox(
+          heightFactor: 0.6,
+          widthFactor: 1,
+          child: content,
+        ),
+      ),
+    );
   }
 
   @override
