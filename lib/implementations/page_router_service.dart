@@ -93,7 +93,7 @@ class PageRouterService implements IPageRouterService {
     dismissBar();
     routes.add(PageRoutePoint(route: name, data: bindingData));
 
-    context.go(name, extra: data);
+    router.router.go(name, extra: data);
     return true;
   }
 
