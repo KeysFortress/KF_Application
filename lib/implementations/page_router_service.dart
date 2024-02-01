@@ -2,7 +2,6 @@ import 'package:domain/models/core_router.dart';
 import 'package:domain/models/enums.dart';
 import 'package:domain/models/page_route.dart';
 import 'package:domain/models/transition_data.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -43,14 +42,16 @@ class PageRouterService implements IPageRouterService {
     PageRoutePoint point;
     if (routes.length > 1)
       point = routes.elementAt(routes.length - 2);
-    else
+    else {
       point = PageRoutePoint(
         route: "/",
       );
+    }
 
     SystemChannels.textInput.invokeMethod('TextInput.hide');
     routes.removeLast();
-    observer.disposeAll();
+    //TODO have to figure a better way for disposing. This leads to bugs.
+    // observer.disposeAll();
     context.go(
       point.route,
       extra: TransitionData(
@@ -62,7 +63,6 @@ class PageRouterService implements IPageRouterService {
   @override
   backToPreviousFirst(BuildContext context, String route) {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
-    observer.disposeAll();
 
     dismissBar();
     List<PageRoutePoint> newRoutes = [];
@@ -88,7 +88,9 @@ class PageRouterService implements IPageRouterService {
   bool changePage(String name, BuildContext context, TransitionData data,
       {Object? bindingData}) {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
-    observer.disposeAll();
+
+    //TODO have to figure a better way for disposing. This leads to bugs.
+    //observer.disposeAll();
 
     dismissBar();
     routes.add(PageRoutePoint(route: name, data: bindingData));
