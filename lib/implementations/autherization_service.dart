@@ -58,4 +58,14 @@ class AutherizationService implements IAuthorizationService {
     var validCode = _otpService.getCode(val);
     return validCode == code;
   }
+
+  @override
+  Future<bool> enableBiometric() async {
+    try {
+      await _localStorage.set("lock_type", DeviceLockType.biometric.name);
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
 }
