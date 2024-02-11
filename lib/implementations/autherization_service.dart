@@ -68,4 +68,19 @@ class AutherizationService implements IAuthorizationService {
       return false;
     }
   }
+
+  @override
+  Future<bool> unlockPattern(List<int> input) async {
+    var val = await _localStorage.get("lock_value");
+    if (val == null) return false;
+
+    var convertToString = "";
+
+    input.forEach((e) {
+      convertToString += "$e,";
+    });
+    convertToString = convertToString.substring(0, convertToString.length - 1);
+
+    return val == convertToString;
+  }
 }
