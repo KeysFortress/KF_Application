@@ -31,14 +31,13 @@ class PageRouterService implements IPageRouterService {
 
   @override
   late IObserver observer;
-  late BuildContext _currentContext;
   PageRouterService(IObserver current) {
     observer = current;
   }
 
   @override
   backToPrevious(BuildContext context, {bool reverse = false}) {
-    dismissBar();
+    dismissBar(context);
     PageRoutePoint point;
     if (routes.length > 1)
       point = routes.elementAt(routes.length - 2);
@@ -64,7 +63,7 @@ class PageRouterService implements IPageRouterService {
   backToPreviousFirst(BuildContext context, String route) {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-    dismissBar();
+    dismissBar(context);
     List<PageRoutePoint> newRoutes = [];
 
     for (final element in routes) {
@@ -92,7 +91,7 @@ class PageRouterService implements IPageRouterService {
     //TODO have to figure a better way for disposing. This leads to bugs.
     //observer.disposeAll();
 
-    dismissBar();
+    dismissBar(context);
     routes.add(PageRoutePoint(route: name, data: bindingData));
 
     router.router.go(name, extra: data);
@@ -128,7 +127,6 @@ class PageRouterService implements IPageRouterService {
   @override
   openBar(Widget content, BuildContext context,
       {double? width, double? height}) async {
-    _currentContext = context;
     showModalBottomSheet(
         constraints: BoxConstraints(
           minWidth: width ?? 200,
@@ -156,7 +154,6 @@ class PageRouterService implements IPageRouterService {
   @override
   openDialog(Widget content, BuildContext context,
       {double? width, double? height}) {
-    _currentContext = context;
     showDialog(
       barrierDismissible: true,
       useSafeArea: true,
@@ -173,7 +170,7 @@ class PageRouterService implements IPageRouterService {
   }
 
   @override
-  dismissBar() async {
-    Navigator.pop(_currentContext);
+  dismissBar(BuildContext context) async {
+    Navigator.pop(context);
   }
 }
