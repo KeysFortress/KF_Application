@@ -42,7 +42,7 @@ class OtpService implements IOtpService {
   String getCode(String secret) {
     return OTP.generateTOTPCodeString(
       secret,
-      DateTime.now().millisecondsSinceEpoch,
+      DateTime.now().toUtc().millisecondsSinceEpoch,
     );
   }
 
