@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_shadowing_type_parameters
 
 import 'dart:convert';
+
 import 'dart:math';
 
 import 'package:domain/models/http_request.dart';
@@ -12,7 +13,6 @@ import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 class HttpProvider<T> implements IHttpProviderService {
   String? sessionToken;
   List<int> cIds = [];
-
   @override
   Future<http.Response?> getRequest(
     HttpRequest request, {
@@ -124,7 +124,5 @@ class HttpProvider<T> implements IHttpProviderService {
   }
 
   @override
-  void setToken(String token, value) {
-    // TODO: implement setToken
-  }
+  void setToken(String token, value) {}
 }

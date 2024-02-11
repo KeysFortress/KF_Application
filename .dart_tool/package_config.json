@@ -164,6 +164,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "http_methods",
+      "rootUri": "file:///home/kristifor/.pub-cache/hosted/pub.dev/http_methods-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "http_parser",
       "rootUri": "file:///home/kristifor/.pub-cache/hosted/pub.dev/http_parser-4.0.2",
       "packageUri": "lib/",
@@ -350,6 +356,18 @@
       "languageVersion": "2.19"
     },
     {
+      "name": "shelf",
+      "rootUri": "file:///home/kristifor/.pub-cache/hosted/pub.dev/shelf-1.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "shelf_router",
+      "rootUri": "file:///home/kristifor/.pub-cache/hosted/pub.dev/shelf_router-1.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
       "name": "sky_engine",
       "rootUri": "file:///home/kristifor/software/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
@@ -464,7 +482,7 @@
       "languageVersion": "3.0"
     }
   ],
-  "generated": "2024-02-01T09:45:30.458313Z",
+  "generated": "2024-02-11T16:29:16.614033Z",
   "generator": "pub",
   "generatorVersion": "3.3.0-185.0.dev"
 }
