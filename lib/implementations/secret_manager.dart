@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:domain/models/stored_secret.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isecret_manager.dart';
@@ -86,5 +88,30 @@ class SecretManger implements ISecretManager {
     var jsonData = jsonEncode(json);
     await localStorage.set("secrets", jsonData);
     return true;
+  }
+
+  @override
+  Future<bool> copySensitiveData(String data) async {
+    try {
+      //TODO add a call to a popup notifying the user about the
+      //danger in copying passwords as plain text
+
+      await Clipboard.setData(
+        ClipboardData(
+          text: data,
+        ),
+      );
+
+      Future.delayed(
+        Duration(seconds: 20),
+        () async {
+          await Clipboard.setData(ClipboardData(text: ""));
+        },
+      );
+      return true;
+    } catch (ex) {
+      //TODO add a dialog to show the user the action failed
+      return false;
+    }
   }
 }
