@@ -7,56 +7,66 @@ import 'package:shelf/shelf_io.dart' as io;
 
 class HttpServer implements IHttpServer {
   dio.HttpServer? _server;
-
+  late Router _app;
   @override
-  restartServer() async {
+  Future restartServer() async {
     await _server?.close(force: true);
     await startServer();
   }
 
   @override
-  startServer() async {
-    var app = Router();
+  Future startServer() async {
+    _app = Router();
 
-    app.get('/request-pair/<key>', (shelf.Request request, String key) {
+    _app.get("/ping", (shelf.Request request) {
+      return shelf.Response.ok('hello-world');
+    });
+
+    _app.get('/request-pair/<key>', (shelf.Request request, String key) {
+      print("Incoming request");
       return shelf.Response.ok('hello-world $key');
     });
 
-    app.post('/pair', (shelf.Request request) async {
+    _app.get('/login/<key>', (shelf.Request request, String key) {
+      return shelf.Response.ok('hello-world $key');
+    });
+
+    _app.post('/pair', (shelf.Request request) async {
       final payload = await request.readAsString();
 
       return shelf.Response.ok(200);
     });
 
-    app.post('/connect', (shelf.Request request) async {
+    _app.post('/connect', (shelf.Request request) async {
       final payload = await request.readAsString();
 
       return shelf.Response.ok(200);
     });
 
-    app.post('/one-time-connection', (shelf.Request request) async {
+    _app.post('/one-time-connection', (shelf.Request request) async {
       final payload = await request.readAsString();
 
       return shelf.Response.ok(200);
     });
 
-    app.post('/full-sync', (shelf.Request request) async {
+    _app.post('/full-sync', (shelf.Request request) async {
       final payload = await request.readAsString();
 
       return shelf.Response.ok(200);
     });
 
-    app.post('/partial-sync', (shelf.Request request) async {
+    _app.post('/partial-sync', (shelf.Request request) async {
       final payload = await request.readAsString();
 
       return shelf.Response.ok(200);
     });
 
-    _server = await io.serve(app, 'localhost', 9787);
+    _server = await io.serve(_app, 'localhost', 9787);
+    print("Server is running on 127.0.0.1:9787");
   }
 
   @override
-  stopServer() async {
+  Future stopServer() async {
     if (_server == null) return;
 
     await _server?.close(force: true);
