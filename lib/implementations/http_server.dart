@@ -1,13 +1,21 @@
+import 'dart:convert';
 import 'dart:io' as dio;
 
 import 'package:infrastructure/interfaces/ihttp_server.dart';
+import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 
 class HttpServer implements IHttpServer {
+  late ILocalNetworkService _localNetworkService;
   dio.HttpServer? _server;
   late Router _app;
+
+  HttpServer(ILocalNetworkService localNetworkService) {
+    _localNetworkService = localNetworkService;
+  }
+
   @override
   Future restartServer() async {
     await _server?.close(force: true);
@@ -18,50 +26,57 @@ class HttpServer implements IHttpServer {
   Future startServer() async {
     _app = Router();
 
-    _app.get("/ping", (shelf.Request request) {
-      return shelf.Response.ok('hello-world');
-    });
-
-    _app.get('/request-pair/<key>', (shelf.Request request, String key) {
+    _app.get("/ping", (Request request) async {
       print("Incoming request");
-      return shelf.Response.ok('hello-world $key');
+      var device = await _localNetworkService.getNetworkData();
+
+      return Response.ok(
+        jsonEncode(
+          device,
+        ),
+      );
     });
 
-    _app.get('/login/<key>', (shelf.Request request, String key) {
-      return shelf.Response.ok('hello-world $key');
+    _app.get('/request-pair/<key>', (Request request, String key) {
+      print("Incoming request");
+      return Response.ok('hello-world $key');
     });
 
-    _app.post('/pair', (shelf.Request request) async {
+    _app.get('/login/<key>', (Request request, String key) {
+      return Response.ok('hello-world $key');
+    });
+
+    _app.post('/pair', (Request request) async {
       final payload = await request.readAsString();
 
-      return shelf.Response.ok(200);
+      return Response.ok(200);
     });
 
-    _app.post('/connect', (shelf.Request request) async {
+    _app.post('/connect', (Request request) async {
       final payload = await request.readAsString();
 
-      return shelf.Response.ok(200);
+      return Response.ok(200);
     });
 
-    _app.post('/one-time-connection', (shelf.Request request) async {
+    _app.post('/one-time-connection', (Request request) async {
       final payload = await request.readAsString();
 
-      return shelf.Response.ok(200);
+      return Response.ok(200);
     });
 
-    _app.post('/full-sync', (shelf.Request request) async {
+    _app.post('/full-sync', (Request request) async {
       final payload = await request.readAsString();
 
-      return shelf.Response.ok(200);
+      return Response.ok(200);
     });
 
-    _app.post('/partial-sync', (shelf.Request request) async {
+    _app.post('/partial-sync', (Request request) async {
       final payload = await request.readAsString();
 
-      return shelf.Response.ok(200);
+      return Response.ok(200);
     });
 
-    _server = await io.serve(_app, 'localhost', 9787);
+    _server = await io.serve(_app, '0.0.0.0', 9787);
     print("Server is running on 127.0.0.1:9787");
   }
 
