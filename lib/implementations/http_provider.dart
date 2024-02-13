@@ -20,6 +20,7 @@ class HttpProvider<T> implements IHttpProviderService {
     String tokenType = "auth-token",
     String header = "authorization",
     String prefix = "Bearer ",
+    int timeout = 0,
   }) async {
     try {
       request = await checkAuthStatus(
@@ -30,7 +31,13 @@ class HttpProvider<T> implements IHttpProviderService {
         prefix,
       );
 
-      return await http.get(Uri.parse(request.url), headers: request.headers);
+      return timeout > 0
+          ? await http
+              .get(Uri.parse(request.url), headers: request.headers)
+              .timeout(
+                Duration(seconds: timeout),
+              )
+          : await http.get(Uri.parse(request.url), headers: request.headers);
     } catch (e) {
       return null;
     }
@@ -44,16 +51,34 @@ class HttpProvider<T> implements IHttpProviderService {
     String header = "authorization",
     String prefix = "Bearer ",
     bool dontCast = false,
+    int timeout = 0,
   }) async {
     try {
-      return await http.post(
-        Uri.parse(request.url),
-        headers: {
-          ...request.headers,
-          'Content-Type': 'application/json', // Set the Content-Type header
-        },
-        body: request.params,
-      );
+      return timeout > 0
+          ? await http
+              .post(
+                Uri.parse(request.url),
+                headers: {
+                  ...request.headers,
+                  'Content-Type':
+                      'application/json', // Set the Content-Type header
+                },
+                body: request.params,
+              )
+              .timeout(
+                Duration(
+                  seconds: timeout,
+                ),
+              )
+          : await http.post(
+              Uri.parse(request.url),
+              headers: {
+                ...request.headers,
+                'Content-Type':
+                    'application/json', // Set the Content-Type header
+              },
+              body: request.params,
+            );
     } catch (ex) {
       return null;
     }
@@ -66,6 +91,7 @@ class HttpProvider<T> implements IHttpProviderService {
     String tokenType = "auth-token",
     String header = "authorization",
     String prefix = "Bearer ",
+    int timeout = 0,
   }) async {
     try {
       request = await checkAuthStatus(
@@ -76,11 +102,21 @@ class HttpProvider<T> implements IHttpProviderService {
         prefix,
       );
 
-      return await http.put(
-        Uri.parse(request.url),
-        headers: request.headers,
-        body: jsonEncode(request.params),
-      );
+      return timeout > 0
+          ? await http
+              .put(
+                Uri.parse(request.url),
+                headers: request.headers,
+                body: jsonEncode(request.params),
+              )
+              .timeout(
+                Duration(seconds: timeout),
+              )
+          : await http.put(
+              Uri.parse(request.url),
+              headers: request.headers,
+              body: jsonEncode(request.params),
+            );
     } catch (e) {
       return null;
     }
