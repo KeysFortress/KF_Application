@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/src/cryptography/simple_key_pair.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
@@ -11,6 +13,7 @@ import 'package:domain/models/enums.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
+import 'package:domain/models/http_request.dart';
 
 class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
@@ -200,5 +203,37 @@ class LocalNetworkService implements ILocalNetworkService {
     _storage.set("communication-key-private", privateKeyData);
 
     return keys;
+  }
+
+  Future<bool> connectToDevice(
+      String ip, String challange, String signature) async {
+    var credentails = await getCredentails();
+    var currentMessage = BianaryConverter.hexStringToList(challange);
+    var currentSignature = BianaryConverter.hexStringToList(signature);
+    var isValid = await _signatureService.verifySignature(
+      currentMessage,
+      Signature(
+        currentSignature,
+        publicKey: await credentails.extractPublicKey(),
+      ),
+    );
+
+    if (!isValid) return false;
+
+    var pairSiganture =
+        await _signatureService.signMessage(credentails, challange);
+    var result = await _httpProviderService.postRequest(
+      HttpRequest(
+        "$ip/pair",
+        {},
+        jsonEncode(pairSiganture),
+      ),
+    );
+
+    if (result == null || result.statusCode != 200) return false;
+
+    //TODO save the data to the session
+
+    return true;
   }
 }
