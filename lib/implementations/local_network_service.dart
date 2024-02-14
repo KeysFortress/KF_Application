@@ -1,17 +1,30 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
+import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/src/cryptography/simple_key_pair.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
 import 'package:domain/models/enums.dart';
+import 'package:infrastructure/interfaces/ilocal_storage.dart';
+import 'package:infrastructure/interfaces/isignature_service.dart';
+import 'package:domain/converters/binary_converter.dart';
+import 'package:domain/models/http_request.dart';
 
 class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
+  late ISignatureService _signatureService;
+  late IlocalStorage _storage;
 
-  LocalNetworkService(IHttpProviderService httpProviderService) {
+  LocalNetworkService(IHttpProviderService httpProviderService,
+      ISignatureService signatureService, IlocalStorage storage) {
     _httpProviderService = httpProviderService;
+    _signatureService = signatureService;
+    _storage = storage;
   }
 
   @override
@@ -161,5 +174,66 @@ class LocalNetworkService implements ILocalNetworkService {
         return null;
       }
     }
+  }
+
+  @override
+  Future<SimpleKeyPair> getCredentails() async {
+    var encryptionKey = await _storage.get("communication-key-public");
+    var encryptionKeyPrivate = await _storage.get("communication-key-private");
+    return encryptionKey != null
+        ? await constructFromStorage(encryptionKey, encryptionKeyPrivate)
+        : await generateNewKey();
+  }
+
+  Future<SimpleKeyPair> constructFromStorage(
+      encryptionKey, encryptionKeyPrivate) async {
+    return await _signatureService.importKeyPair(
+        encryptionKey, encryptionKeyPrivate);
+  }
+
+  Future<SimpleKeyPair> generateNewKey() async {
+    var keys = await _signatureService.generatePrivateKey();
+    var publicKey = await keys.extractPublicKey();
+    var privateKey = await keys.extractPrivateKeyBytes();
+
+    var publicKeyData = BianaryConverter.toHex(publicKey.bytes);
+    var privateKeyData = BianaryConverter.toHex(privateKey);
+
+    _storage.set("communication-key-public", publicKeyData);
+    _storage.set("communication-key-private", privateKeyData);
+
+    return keys;
+  }
+
+  Future<bool> connectToDevice(
+      String ip, String challange, String signature) async {
+    var credentails = await getCredentails();
+    var currentMessage = BianaryConverter.hexStringToList(challange);
+    var currentSignature = BianaryConverter.hexStringToList(signature);
+    var isValid = await _signatureService.verifySignature(
+      currentMessage,
+      Signature(
+        currentSignature,
+        publicKey: await credentails.extractPublicKey(),
+      ),
+    );
+
+    if (!isValid) return false;
+
+    var pairSiganture =
+        await _signatureService.signMessage(credentails, challange);
+    var result = await _httpProviderService.postRequest(
+      HttpRequest(
+        "$ip/pair",
+        {},
+        jsonEncode(pairSiganture),
+      ),
+    );
+
+    if (result == null || result.statusCode != 200) return false;
+
+    //TODO save the data to the session
+
+    return true;
   }
 }
