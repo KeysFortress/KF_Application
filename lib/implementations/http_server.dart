@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
@@ -31,6 +32,12 @@ class HttpServer implements IHttpServer {
 
   @override
   Future startServer() async {
+    final certPath = 'lib/certificates/cert.pem';
+    final keyPath = 'lib/certificates/key.pem';
+
+    final certData = await rootBundle.load(certPath);
+    final keyData = await rootBundle.load(keyPath);
+
     _app = Router();
 
     _app.get("/ping", (Request request) async {
@@ -92,10 +99,12 @@ class HttpServer implements IHttpServer {
       '0.0.0.0',
       9787,
       securityContext: SecurityContext()
-        ..useCertificateChain('path/to/cert.pem')
-        ..usePrivateKey('path/to/key.pem'),
+        ..useCertificateChainBytes(certData.buffer.asUint8List())
+        ..usePrivateKeyBytes(
+          keyData.buffer.asUint8List(),
+        ),
     );
-    print("Server is running on 127.0.0.1:9787");
+    print("Server is running on 0.0.0.0:9787");
   }
 
   @override
