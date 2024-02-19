@@ -1,20 +1,34 @@
 // ignore_for_file: avoid_shadowing_type_parameters
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'dart:math';
 
 import 'package:domain/models/http_request.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
+import 'package:http/io_client.dart';
 
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 
 class HttpProvider<T> implements IHttpProviderService {
   String? sessionToken;
   List<int> cIds = [];
+  late IOClient _ioClient;
+  HttpProvider() {
+    var ioClient = HttpClient()..badCertificateCallback = validateCertificate;
+    _ioClient = IOClient(ioClient);
+  }
+
+  bool validateCertificate(X509Certificate cert, String host, int port) {
+    print(host);
+    print(cert.issuer);
+    return true;
+  }
+
   @override
-  Future<http.Response?> getRequest(
+  Future<Response?> getRequest(
     HttpRequest request, {
     bool isAuthenticated = false,
     String tokenType = "auth-token",
@@ -32,19 +46,20 @@ class HttpProvider<T> implements IHttpProviderService {
       );
 
       return timeout > 0
-          ? await http
+          ? await _ioClient
               .get(Uri.parse(request.url), headers: request.headers)
               .timeout(
                 Duration(seconds: timeout),
               )
-          : await http.get(Uri.parse(request.url), headers: request.headers);
+          : await _ioClient.get(Uri.parse(request.url),
+              headers: request.headers);
     } catch (e) {
       return null;
     }
   }
 
   @override
-  Future<http.Response?> postRequest(
+  Future<Response?> postRequest(
     HttpRequest request, {
     bool isAuthenticated = false,
     String tokenType = "auth-token",
@@ -55,13 +70,12 @@ class HttpProvider<T> implements IHttpProviderService {
   }) async {
     try {
       return timeout > 0
-          ? await http
+          ? await _ioClient
               .post(
                 Uri.parse(request.url),
                 headers: {
                   ...request.headers,
-                  'Content-Type':
-                      'application/json', // Set the Content-Type header
+                  'Content-Type': 'application/json',
                 },
                 body: request.params,
               )
@@ -70,12 +84,11 @@ class HttpProvider<T> implements IHttpProviderService {
                   seconds: timeout,
                 ),
               )
-          : await http.post(
+          : await _ioClient.post(
               Uri.parse(request.url),
               headers: {
                 ...request.headers,
-                'Content-Type':
-                    'application/json', // Set the Content-Type header
+                'Content-Type': 'application/json',
               },
               body: request.params,
             );
@@ -85,7 +98,7 @@ class HttpProvider<T> implements IHttpProviderService {
   }
 
   @override
-  Future<http.Response?> putReqest(
+  Future<Response?> putReqest(
     HttpRequest request, {
     bool isAuthenticated = false,
     String tokenType = "auth-token",
@@ -103,7 +116,7 @@ class HttpProvider<T> implements IHttpProviderService {
       );
 
       return timeout > 0
-          ? await http
+          ? await _ioClient
               .put(
                 Uri.parse(request.url),
                 headers: request.headers,
@@ -112,7 +125,7 @@ class HttpProvider<T> implements IHttpProviderService {
               .timeout(
                 Duration(seconds: timeout),
               )
-          : await http.put(
+          : await _ioClient.put(
               Uri.parse(request.url),
               headers: request.headers,
               body: jsonEncode(request.params),
