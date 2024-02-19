@@ -3,7 +3,6 @@ import 'package:application/extensions/string_extensions.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
-import 'package:crypto/crypto.dart' as crp;
 
 class SignatureService implements ISignatureService {
   Future<SimpleKeyPair> generatePrivateKey() async {
