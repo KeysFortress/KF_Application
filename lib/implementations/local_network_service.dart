@@ -159,7 +159,7 @@ class LocalNetworkService implements ILocalNetworkService {
 
   Future<Device?> _scanDevice(String target, List<Device> devices) async {
     final ping = await _httpProviderService.getRequest(
-      HttpRequest("http://$target:9787/ping", {}, {}),
+      HttpRequest("https://$target:9787/ping", {}, {}),
       timeout: 1,
     );
     if (ping == null || ping.statusCode != 200) {
