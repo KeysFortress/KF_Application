@@ -1,11 +1,8 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
-import 'package:cryptography/src/cryptography/simple_key_pair.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
@@ -13,7 +10,6 @@ import 'package:domain/models/enums.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
-import 'package:domain/models/http_request.dart';
 
 class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
@@ -149,7 +145,7 @@ class LocalNetworkService implements ILocalNetworkService {
     for (int i = 1; i <= 255; i++) {
       final target = baseIp + i.toString();
 
-      futures.add(_scanDevice(target, _devices));
+      futures.add(scanDevice(target, _devices));
     }
 
     var res = await Future.wait(futures);
@@ -157,7 +153,7 @@ class LocalNetworkService implements ILocalNetworkService {
     return res.where((element) => element != null).toList();
   }
 
-  Future<Device?> _scanDevice(String target, List<Device> devices) async {
+  Future<Device?> scanDevice(String target, List<Device> devices) async {
     final ping = await _httpProviderService.getRequest(
       HttpRequest("https://$target:9787/ping", {}, {}),
       timeout: 1,
@@ -174,6 +170,7 @@ class LocalNetworkService implements ILocalNetworkService {
         return null;
       }
     }
+    return null;
   }
 
   @override
