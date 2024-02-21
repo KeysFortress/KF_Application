@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:io' as dio;
-import 'dart:io';
 
-import 'package:cryptography/cryptography.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
@@ -15,13 +13,16 @@ import 'package:shelf/shelf_io.dart' as io;
 class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
   late ISignatureService _signatureService;
+  late IChallangeService _challangeService;
+
   dio.HttpServer? _server;
   late Router _app;
 
   HttpServer(ILocalNetworkService localNetworkService,
-      ISignatureService signatureService) {
+      ISignatureService signatureService, IChallangeService challangeService) {
     _localNetworkService = localNetworkService;
     _signatureService = signatureService;
+    _challangeService = challangeService;
   }
 
   @override
@@ -52,12 +53,8 @@ class HttpServer implements IHttpServer {
     });
 
     _app.get('/request-pair/<key>', (Request request, String key) async {
-      var keys = await _localNetworkService.getCredentails();
-      var publicKey = await _signatureService.importPublic(key);
-      var generatedSignature =
-          await _signatureService.signMessage(publicKey, "asd");
-
-      return Response.ok(generatedSignature);
+      var challange = _challangeService.issue(key);
+      return Response.ok(challange);
     });
 
     _app.get('/login/<key>', (Request request, String key) {
@@ -98,7 +95,7 @@ class HttpServer implements IHttpServer {
       _app,
       '0.0.0.0',
       9787,
-      securityContext: SecurityContext()
+      securityContext: dio.SecurityContext()
         ..useCertificateChainBytes(certData.buffer.asUint8List())
         ..usePrivateKeyBytes(
           keyData.buffer.asUint8List(),
