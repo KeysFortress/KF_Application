@@ -70,8 +70,3 @@ class SignatureService implements ISignatureService {
     return kpData;
   }
 }
-
-extension Uint8ListHex on Uint8List {
-  String toHex() =>
-      map((byte) => byte.toRadixString(16).padLeft(2, '0')).join('');
-}

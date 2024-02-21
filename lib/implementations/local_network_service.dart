@@ -1,11 +1,8 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
-import 'package:cryptography/src/cryptography/simple_key_pair.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
@@ -13,7 +10,6 @@ import 'package:domain/models/enums.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
-import 'package:domain/models/http_request.dart';
 
 class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
@@ -235,5 +231,38 @@ class LocalNetworkService implements ILocalNetworkService {
     //TODO save the data to the session
 
     return true;
+  }
+
+  @override
+  Future<String> issueChallange(Device device) async {
+    SimpleKeyPair keys;
+    var existingSignature = await _storage.get("${device.mac}_private");
+    if (existingSignature == null)
+      keys = await _signatureService.generatePrivateKey();
+    else {
+      var publicKey = await _storage.get("${device.mac}_public");
+      keys =
+          await _signatureService.importKeyPair(publicKey, existingSignature);
+    }
+
+    var publicData = await keys.extractPublicKey();
+    var hex = BianaryConverter.toHex(publicData.bytes);
+    final challangeResponse = await _httpProviderService.getRequest(
+      HttpRequest(
+        "https://${device.ip}:${device.port}/request-pair/$hex",
+        {},
+        {},
+      ),
+    );
+
+    if (challangeResponse == null || challangeResponse.statusCode != 200)
+      throw Exception("Failed to receive a sign in challange");
+
+    var signature = await _signatureService.signMessage(
+      keys,
+      challangeResponse.body,
+    );
+
+    return BianaryConverter.toHex(signature.bytes);
   }
 }
