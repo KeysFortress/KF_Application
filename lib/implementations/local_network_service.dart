@@ -233,4 +233,37 @@ class LocalNetworkService implements ILocalNetworkService {
 
     return true;
   }
+
+  @override
+  Future<String> issueChallange(Device device) async {
+    SimpleKeyPair keys;
+    var existingSignature = await _storage.get("${device.mac}_private");
+    if (existingSignature == null)
+      keys = await _signatureService.generatePrivateKey();
+    else {
+      var publicKey = await _storage.get("${device.mac}_public");
+      keys =
+          await _signatureService.importKeyPair(publicKey, existingSignature);
+    }
+
+    var publicData = await keys.extractPublicKey();
+    var hex = BianaryConverter.toHex(publicData.bytes);
+    final challangeResponse = await _httpProviderService.getRequest(
+      HttpRequest(
+        "https://${device.ip}:${device.port}/request-pair/$hex",
+        {},
+        {},
+      ),
+    );
+
+    if (challangeResponse == null || challangeResponse.statusCode != 200)
+      throw Exception("Failed to receive a sign in challange");
+
+    var signature = await _signatureService.signMessage(
+      keys,
+      challangeResponse.body,
+    );
+
+    return BianaryConverter.toHex(signature.bytes);
+  }
 }
