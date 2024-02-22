@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:application/extensions/string_extensions.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';

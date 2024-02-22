@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
+import 'package:flutter/foundation.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
@@ -174,12 +175,16 @@ class LocalNetworkService implements ILocalNetworkService {
   }
 
   @override
-  Future<SimpleKeyPair> getCredentails() async {
-    var encryptionKey = await _storage.get("communication-key-public");
-    var encryptionKeyPrivate = await _storage.get("communication-key-private");
-    return encryptionKey != null
+  Future<SimpleKeyPair> getCredentails(Device device) async {
+    var encryptionKey = await _storage.get(
+      "${device.mac}-communication-key-public-store",
+    );
+    var encryptionKeyPrivate = await _storage.get(
+      "${device.mac}-communication-key-private-store",
+    );
+    return encryptionKey != null && encryptionKeyPrivate != null
         ? await constructFromStorage(encryptionKey, encryptionKeyPrivate)
-        : await generateNewKey();
+        : await generateNewKey(device);
   }
 
   Future<SimpleKeyPair> constructFromStorage(
@@ -188,7 +193,7 @@ class LocalNetworkService implements ILocalNetworkService {
         encryptionKey, encryptionKeyPrivate);
   }
 
-  Future<SimpleKeyPair> generateNewKey() async {
+  Future<SimpleKeyPair> generateNewKey(Device device) async {
     var keys = await _signatureService.generatePrivateKey();
     var publicKey = await keys.extractPublicKey();
     var privateKey = await keys.extractPrivateKeyBytes();
@@ -196,63 +201,60 @@ class LocalNetworkService implements ILocalNetworkService {
     var publicKeyData = BianaryConverter.toHex(publicKey.bytes);
     var privateKeyData = BianaryConverter.toHex(privateKey);
 
-    _storage.set("communication-key-public", publicKeyData);
-    _storage.set("communication-key-private", privateKeyData);
+    _storage.set("${device.mac}-communication-key-public-store", publicKeyData);
+    _storage.set(
+        "${device.mac}-communication-key-private-store", privateKeyData);
 
     return keys;
   }
 
-  Future<bool> connectToDevice(
-      String ip, String challange, String signature) async {
-    var credentails = await getCredentails();
-    var currentMessage = BianaryConverter.hexStringToList(challange);
-    var currentSignature = BianaryConverter.hexStringToList(signature);
-    var isValid = await _signatureService.verifySignature(
-      currentMessage,
-      Signature(
-        currentSignature,
-        publicKey: await credentails.extractPublicKey(),
-      ),
-    );
+  Future<bool> connectToDevice(Device device, String challange) async {
+    SimpleKeyPair credentials = await getCredentails(device);
+    var sign = await _signatureService.signMessage(credentials, challange);
+    var publicKey = await credentials.extractPublicKey();
 
-    if (!isValid) return false;
+    print(await credentials.extractPublicKey());
+    var serialize = jsonEncode({
+      "signature": BianaryConverter.toHex(sign.bytes),
+      "publicKey": BianaryConverter.toHex(publicKey.bytes),
+      "challange": challange
+    });
 
-    var pairSiganture =
-        await _signatureService.signMessage(credentails, challange);
+    var publicKeyFromSign = (sign.publicKey as SimplePublicKey).bytes;
+
+    if (listEquals(publicKeyFromSign, publicKey.bytes)) {
+      print('Public keys match!');
+    } else {
+      print('Public keys do not match.');
+    }
+
+    print('Public Key from Sign: $publicKeyFromSign');
+    print('Public Key from Credentials: ${publicKey.bytes}');
     var result = await _httpProviderService.postRequest(
       HttpRequest(
-        "$ip/pair",
+        "https://${device.ip}:${device.port}/pair",
         {},
-        jsonEncode(pairSiganture),
+        serialize,
       ),
     );
 
     if (result == null || result.statusCode != 200) return false;
 
     //TODO save the data to the session
-
+    print("ok");
     return true;
   }
 
   @override
-  Future<String> issueChallange(Device device) async {
-    SimpleKeyPair keys;
-    var existingSignature = await _storage.get("${device.mac}_private");
-    if (existingSignature == null)
-      keys = await _signatureService.generatePrivateKey();
-    else {
-      var publicKey = await _storage.get("${device.mac}_public");
-      keys =
-          await _signatureService.importKeyPair(publicKey, existingSignature);
-    }
-
+  Future<String> requestChallange(Device device) async {
+    SimpleKeyPair keys = await getCredentails(device);
     var publicData = await keys.extractPublicKey();
     var hex = BianaryConverter.toHex(publicData.bytes);
-    final challangeResponse = await _httpProviderService.getRequest(
+    final challangeResponse = await _httpProviderService.postRequest(
       HttpRequest(
-        "https://${device.ip}:${device.port}/request-pair/$hex",
+        "https://${device.ip}:${device.port}/request-pair",
         {},
-        {},
+        hex,
       ),
     );
 
