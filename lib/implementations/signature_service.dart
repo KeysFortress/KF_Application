@@ -33,7 +33,10 @@ class SignatureService implements ISignatureService {
     return await algorithm.sign(data, keyPair: keyPair);
   }
 
-  Future<bool> verifySignature(List<int> message, Signature signature) async {
+  Future<bool> verifySignature(
+    List<int> message,
+    Signature signature,
+  ) async {
     final algorithm = Ed25519();
 
     return await algorithm.verify(
