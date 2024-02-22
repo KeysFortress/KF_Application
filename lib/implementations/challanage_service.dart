@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:domain/models/challange.dart';
 
@@ -16,9 +17,11 @@ class ChallangeService implements IChallangeService {
 
   @override
   String getChallange(String publicKey) {
-    var current = _challanges.firstWhere(
+    var current = _challanges.lastWhereOrNull(
       (element) => element.publicKey == publicKey,
     );
+
+    if (current == null) throw Exception();
 
     return current.challange;
   }

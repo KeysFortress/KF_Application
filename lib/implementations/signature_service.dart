@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:application/extensions/string_extensions.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
@@ -34,7 +33,10 @@ class SignatureService implements ISignatureService {
     return await algorithm.sign(data, keyPair: keyPair);
   }
 
-  Future<bool> verifySignature(List<int> message, Signature signature) async {
+  Future<bool> verifySignature(
+    List<int> message,
+    Signature signature,
+  ) async {
     final algorithm = Ed25519();
 
     return await algorithm.verify(

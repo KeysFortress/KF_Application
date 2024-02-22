@@ -29,7 +29,7 @@ class LocalNetworkService implements ILocalNetworkService {
     var name = await getDeviceName();
     var ip = await getIPAddress();
     var deviceType = getDeviceType();
-    return Device(name, "", ip, "0000", identifier, deviceType, SyncTypes.otc);
+    return Device(name, "", ip, "9787", identifier, deviceType, SyncTypes.otc);
   }
 
   DeviceTypes getDeviceType() {

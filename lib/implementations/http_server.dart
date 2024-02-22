@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io' as dio;
 
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
 import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
@@ -9,6 +10,7 @@ import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
+import 'package:domain/converters/binary_converter.dart';
 
 class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
@@ -52,7 +54,8 @@ class HttpServer implements IHttpServer {
       );
     });
 
-    _app.get('/request-pair/<key>', (Request request, String key) async {
+    _app.post('/request-pair', (Request request) async {
+      var key = await request.readAsString();
       var challange = _challangeService.issue(key);
       return Response.ok(challange);
     });
@@ -62,9 +65,24 @@ class HttpServer implements IHttpServer {
     });
 
     _app.post('/pair', (Request request) async {
-      final payload = await request.readAsString();
+      final signatureData = await request.readAsString();
+      var json = jsonDecode(signatureData);
+      var challange = _challangeService.getChallange(json["publicKey"]);
+      var sigData = BianaryConverter.hexStringToList(json['signature']);
+      var pkBytes = BianaryConverter.hexStringToList(json["publicKey"]);
 
-      return Response.ok(200);
+      var isAuthentinicationValid = await _signatureService.verifySignature(
+        BianaryConverter.hexStringToList(challange),
+        Signature(
+          sigData,
+          publicKey: SimplePublicKey(
+            pkBytes,
+            type: KeyPairType.ed25519,
+          ),
+        ),
+      );
+
+      return isAuthentinicationValid ? Response.ok(200) : Response.badRequest();
     });
 
     _app.post('/connect', (Request request) async {
