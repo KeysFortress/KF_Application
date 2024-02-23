@@ -7,6 +7,7 @@ import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
+import 'package:infrastructure/interfaces/itoken_service.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
@@ -16,15 +17,20 @@ class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
   late ISignatureService _signatureService;
   late IChallangeService _challangeService;
+  late ITokenService _tokenService;
 
   dio.HttpServer? _server;
   late Router _app;
 
-  HttpServer(ILocalNetworkService localNetworkService,
-      ISignatureService signatureService, IChallangeService challangeService) {
+  HttpServer(
+      ILocalNetworkService localNetworkService,
+      ISignatureService signatureService,
+      IChallangeService challangeService,
+      ITokenService tokenService) {
     _localNetworkService = localNetworkService;
     _signatureService = signatureService;
     _challangeService = challangeService;
+    _tokenService = tokenService;
   }
 
   @override
@@ -81,14 +87,18 @@ class HttpServer implements IHttpServer {
           ),
         ),
       );
+      var token = _tokenService.issueToken();
 
-      return isAuthentinicationValid ? Response.ok(200) : Response.badRequest();
+      return isAuthentinicationValid
+          ? Response.ok(token)
+          : Response.badRequest();
     });
 
     _app.post('/connect', (Request request) async {
       final payload = await request.readAsString();
+      var isValid = _tokenService.validateToken(payload);
 
-      return Response.ok(200);
+      return isValid ? Response.ok(200) : Response.badRequest();
     });
 
     _app.post('/one-time-connection', (Request request) async {
