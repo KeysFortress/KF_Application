@@ -261,11 +261,6 @@ class LocalNetworkService implements ILocalNetworkService {
     if (challangeResponse == null || challangeResponse.statusCode != 200)
       throw Exception("Failed to receive a sign in challange");
 
-    var signature = await _signatureService.signMessage(
-      keys,
-      challangeResponse.body,
-    );
-
-    return BianaryConverter.toHex(signature.bytes);
+    return challangeResponse.body;
   }
 }
