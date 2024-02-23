@@ -1,22 +1,26 @@
 import 'package:domain/models/device.dart';
+import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isession_service.dart';
 
 class SessionService implements ISessionService {
-  @override
-  add(String token, Device device) {
-    // TODO: implement add
-    throw UnimplementedError();
+  late IlocalStorage _storage;
+
+  SessionService(IlocalStorage localStorage) {
+    _storage = localStorage;
   }
 
   @override
-  getToken(Device device) {
-    // TODO: implement getToken
-    throw UnimplementedError();
+  Future add(String token, Device device) async {
+    await _storage.set("${device.name}_${device.mac}", token);
   }
 
   @override
-  remove(Device device) {
-    // TODO: implement remove
-    throw UnimplementedError();
+  Future<String?> getToken(Device device) async {
+    return await _storage.get("${device.name}_${device.mac}");
+  }
+
+  @override
+  Future remove(Device device) async {
+    await _storage.set("${device.name}_${device.mac}", "");
   }
 }
