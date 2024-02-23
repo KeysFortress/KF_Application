@@ -29,7 +29,7 @@ class SignatureService implements ISignatureService {
 
   Future<Signature> signMessage(KeyPair keyPair, String message) async {
     final algorithm = Ed25519();
-    var data = message.toByteList();
+    var data = BianaryConverter.hexStringToList(message);
     return await algorithm.sign(data, keyPair: keyPair);
   }
 
