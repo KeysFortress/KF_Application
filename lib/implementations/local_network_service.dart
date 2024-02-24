@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
-import 'package:flutter/foundation.dart';
+import 'package:infrastructure/interfaces/idevices_service.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:domain/models/http_request.dart';
 import 'package:domain/models/enums.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
+import 'package:infrastructure/interfaces/isession_service.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
 
@@ -16,12 +17,21 @@ class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
   late ISignatureService _signatureService;
   late IlocalStorage _storage;
+  late ISessionService _sessionService;
+  late IDevicesService _devicesService;
 
-  LocalNetworkService(IHttpProviderService httpProviderService,
-      ISignatureService signatureService, IlocalStorage storage) {
+  LocalNetworkService(
+    IHttpProviderService httpProviderService,
+    ISignatureService signatureService,
+    IlocalStorage storage,
+    ISessionService sessionService,
+    IDevicesService devicesService,
+  ) {
     _httpProviderService = httpProviderService;
     _signatureService = signatureService;
     _storage = storage;
+    _sessionService = sessionService;
+    _devicesService = devicesService;
   }
 
   @override
@@ -213,23 +223,12 @@ class LocalNetworkService implements ILocalNetworkService {
     var sign = await _signatureService.signMessage(credentials, challange);
     var publicKey = await credentials.extractPublicKey();
 
-    print(await credentials.extractPublicKey());
     var serialize = jsonEncode({
       "signature": BianaryConverter.toHex(sign.bytes),
       "publicKey": BianaryConverter.toHex(publicKey.bytes),
       "challange": challange
     });
 
-    var publicKeyFromSign = (sign.publicKey as SimplePublicKey).bytes;
-
-    if (listEquals(publicKeyFromSign, publicKey.bytes)) {
-      print('Public keys match!');
-    } else {
-      print('Public keys do not match.');
-    }
-
-    print('Public Key from Sign: $publicKeyFromSign');
-    print('Public Key from Credentials: ${publicKey.bytes}');
     var result = await _httpProviderService.postRequest(
       HttpRequest(
         "https://${device.ip}:${device.port}/pair",
@@ -240,8 +239,9 @@ class LocalNetworkService implements ILocalNetworkService {
 
     if (result == null || result.statusCode != 200) return false;
 
-    //TODO save the data to the session
-    print("ok");
+    await _sessionService.add(result.body, device);
+    await _devicesService.add(device);
+
     return true;
   }
 
