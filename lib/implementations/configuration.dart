@@ -1,27 +1,29 @@
 import 'dart:convert';
 
-import 'package:domain/models/app_config.dart';
+import 'package:flutter/services.dart';
 import 'package:infrastructure/interfaces/iconfiguration.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 
 class Configuration implements IConfiguration {
   IlocalStorage storage;
-
   Configuration({required this.storage});
 
   @override
-  Future<AppConfig> getConfig() async {
-    var existingOverride = await storage.get("Config");
-    if (existingOverride == null) return await AppConfig.load();
+  late Map<String, dynamic> data;
 
-    if (existingOverride.isEmpty) {
-      return await AppConfig.load();
+  @override
+  Future<Map<String, dynamic>> load() async {
+    var existingOverride = await storage.get("Config");
+    if (existingOverride != null) {
+      var map = jsonDecode(existingOverride);
+      return map;
     }
 
-    var map = jsonDecode(existingOverride);
-    var current = AppConfig.fromJson(map);
-    config = current;
-    return current;
+    final String jsonString = await rootBundle.loadString(
+      'packages/domain/config.json',
+    );
+    data = json.decode(jsonString);
+    return data;
   }
 
   @override
@@ -29,7 +31,4 @@ class Configuration implements IConfiguration {
     // TODO: implement overrideConfig
     throw UnimplementedError();
   }
-
-  @override
-  AppConfig? config;
 }

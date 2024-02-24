@@ -5,11 +5,9 @@ import 'package:infrastructure/interfaces/iconfiguration.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/itoken_service.dart';
-import 'package:domain/models/app_config.dart';
 
 class TokenService implements ITokenService {
   late String _secret;
-  late AppConfig config;
   late String name;
   late IlocalStorage _localStorage;
   late ILocalNetworkService _localNetworkService;
@@ -17,10 +15,9 @@ class TokenService implements ITokenService {
 
   TokenService(IConfiguration configuration, IlocalStorage storage,
       ILocalNetworkService networkService) {
-    configuration.getConfig().then((value) => config = value).whenComplete(() {
-      _secret = config.jtwSecret;
-    });
+    _secret = configuration.data["jtwSecret"];
     _localStorage = storage;
+
     storage.get("revokedTokens").then((value) {
       if (value == null) return;
 
@@ -48,7 +45,6 @@ class TokenService implements ITokenService {
 
     final token = jwt.sign(
       SecretKey(_secret),
-      algorithm: JWTAlgorithm.EdDSA,
       expiresIn: Duration(days: 10),
     );
 
