@@ -2,20 +2,22 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:domain/exceptions/base_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:infrastructure/interfaces/iexception_manager.dart';
-import 'package:logging/logging.dart';
+import 'package:infrastructure/interfaces/ilogging_service.dart';
 
 class ExceptionManager implements IExceptionManager {
   Flushbar? _activeBar;
-  final log = Logger('Airzen_Application_Errors');
+  late ILoggingService _loggingService;
 
-  @override
-  logException(BaseException exception) {
-    log.severe(exception.message);
+  ExceptionManager(ILoggingService loggingService) {
+    _loggingService = loggingService;
   }
 
   @override
   Future raisePopup(BaseException exception) async {
-    logException(exception);
+    _loggingService.exception(
+      exception.message ?? "",
+      baseException: exception,
+    );
 
     if (_activeBar != null) {
       await dismissBar();
