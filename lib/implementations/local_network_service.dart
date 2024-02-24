@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
@@ -12,6 +14,7 @@ import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isession_service.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
 import 'package:domain/converters/binary_converter.dart';
+import 'dart:async';
 
 class LocalNetworkService implements ILocalNetworkService {
   late IHttpProviderService _httpProviderService;
@@ -84,35 +87,15 @@ class LocalNetworkService implements ILocalNetworkService {
   }
 
   Future<String> getMacAddress() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    var identifier = "";
+    var exists = await _storage.get("DeviceId");
+    if (exists != null) return exists;
 
-    if (Platform.isAndroid) {
-      var info = await deviceInfo.androidInfo;
-      identifier = info.display;
-    }
+    var random = Random.secure();
+    var id = List<int>.generate(8, (index) => random.nextInt(256));
+    var idBytes = base64.encode(Uint8List.fromList(id));
 
-    if (Platform.isIOS) {
-      var info = await deviceInfo.iosInfo;
-      identifier = info.name;
-    }
-
-    if (Platform.isLinux) {
-      var info = await deviceInfo.linuxInfo;
-      identifier = info.id;
-    }
-
-    if (Platform.isMacOS) {
-      var info = await deviceInfo.macOsInfo;
-      identifier = info.systemGUID.toString();
-    }
-
-    if (Platform.isWindows) {
-      var info = await deviceInfo.windowsInfo;
-      identifier = info.deviceId.toString();
-    }
-
-    return identifier;
+    await _storage.set("DeviceId", idBytes);
+    return idBytes;
   }
 
   Future<String> getDeviceName() async {
