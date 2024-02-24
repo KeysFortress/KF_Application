@@ -1,14 +1,19 @@
 import 'dart:convert';
 
 import 'package:domain/models/device.dart';
+import 'package:domain/models/http_request.dart';
 import 'package:infrastructure/interfaces/idevices_service.dart';
+import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 
 class DeviceService implements IDevicesService {
   late IlocalStorage _storage;
+  late IHttpProviderService _providerService;
 
-  DeviceService(IlocalStorage storage) {
+  DeviceService(
+      IlocalStorage storage, IHttpProviderService httpProviderService) {
     _storage = storage;
+    _providerService = httpProviderService;
   }
 
   @override
@@ -65,6 +70,21 @@ class DeviceService implements IDevicesService {
     var json = devices.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await _storage.set("devices", jsonData);
+
+    return true;
+  }
+
+  @override
+  Future<bool> isDeviceConnected(Device current) async {
+    var response = await _providerService.getRequest(
+      HttpRequest(
+        "https://${current.ip}:${current.port}/status",
+        {},
+        {},
+      ),
+    );
+
+    if (response == null || response.statusCode != 200) return false;
 
     return true;
   }
