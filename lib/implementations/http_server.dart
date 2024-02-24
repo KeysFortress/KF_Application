@@ -60,6 +60,10 @@ class HttpServer implements IHttpServer {
       );
     });
 
+    _app.get("/status", (Request request) async {
+      return Response.ok("200");
+    });
+
     _app.post('/request-pair', (Request request) async {
       var key = await request.readAsString();
       var challange = _challangeService.issue(key);
