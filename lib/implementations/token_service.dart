@@ -27,6 +27,7 @@ class TokenService implements ITokenService {
       List<String> decode = jsonDecode(value);
       revokedTokens = decode;
     });
+    _localNetworkService = networkService;
     _localNetworkService.getNetworkData().then((value) {
       name = value.name;
     });
