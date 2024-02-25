@@ -18,9 +18,20 @@ class SecretManger implements ISecretManager {
   SecretManger({required this.localStorage});
 
   @override
-  String generateSecret({int length = 12}) {
-    String allChars =
-        lowercaseChars + uppercaseChars + digitChars + specialChars;
+  String generateSecret({
+    int length = 12,
+    bool isSecial = true,
+    bool isUpper = true,
+    bool isLower = true,
+    bool isDigit = true,
+    bool isUnique = true,
+  }) {
+    String allChars = "";
+
+    if (isLower) allChars += lowercaseChars;
+    if (isUpper) allChars += uppercaseChars;
+    if (isDigit) allChars += digitChars;
+    if (isSecial) allChars += specialChars;
     Random random = Random.secure();
     List<String> passwordCharacters = List.generate(
         length, (index) => allChars[random.nextInt(allChars.length)]);
