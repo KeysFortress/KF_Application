@@ -98,6 +98,7 @@ class SecretManger implements ISecretManager {
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await localStorage.set("secrets", jsonData);
+    await copySensitiveData(secret.content);
     return true;
   }
 
