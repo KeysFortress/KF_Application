@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/models/device.dart';
@@ -133,7 +134,7 @@ class LocalNetworkService implements ILocalNetworkService {
   Future<List<Device?>> scan() async {
     final baseIp = '192.168.1.';
     List<Device> _devices = [];
-
+    var pairedDevices = await _devicesService.all();
     final List<Future<Device?>> futures = [];
 
     for (int i = 1; i <= 255; i++) {
@@ -144,7 +145,14 @@ class LocalNetworkService implements ILocalNetworkService {
 
     var res = await Future.wait(futures);
 
-    return res.where((element) => element != null).toList();
+    return res
+        .where((element) =>
+            element != null &&
+            pairedDevices.firstWhereOrNull(
+                  (pairedDevice) => pairedDevice.mac == element.mac,
+                ) ==
+                null)
+        .toList();
   }
 
   Future<Device?> scanDevice(String target, List<Device> devices) async {
@@ -222,8 +230,10 @@ class LocalNetworkService implements ILocalNetworkService {
 
     if (result == null || result.statusCode != 200) return false;
 
+    var deviceAdded = await _devicesService.add(device);
+    if (!deviceAdded) return false;
+
     await _sessionService.add(result.body, device);
-    await _devicesService.add(device);
 
     return true;
   }
