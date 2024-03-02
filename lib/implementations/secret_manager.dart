@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:domain/models/stored_secret.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
@@ -98,7 +97,6 @@ class SecretManger implements ISecretManager {
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await localStorage.set("secrets", jsonData);
-    await copySensitiveData(secret.content);
     return true;
   }
 
