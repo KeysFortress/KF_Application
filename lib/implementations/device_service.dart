@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:domain/models/device.dart';
 import 'package:domain/models/http_request.dart';
 import 'package:infrastructure/interfaces/idevices_service.dart';
@@ -28,6 +29,9 @@ class DeviceService implements IDevicesService {
         devices.add(current);
       });
     }
+    if (devices.firstWhereOrNull((element) => element.mac == device.mac) !=
+        null) return false;
+
     devices.add(device);
     var json = devices.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
