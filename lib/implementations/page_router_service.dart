@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:domain/models/core_router.dart';
 import 'package:domain/models/enums.dart';
 import 'package:domain/models/page_route.dart';
@@ -85,14 +86,21 @@ class PageRouterService implements IPageRouterService {
 
   @override
   bool changePage(String name, BuildContext context, TransitionData data,
-      {Object? bindingData}) {
+      {Object? bindingData,
+      bool slice = false,
+      int sliceCount = 1,
+      bool saveRoute = true}) {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
     //TODO have to figure a better way for disposing. This leads to bugs.
     //observer.disposeAll();
+    if (saveRoute) routes.add(PageRoutePoint(route: name, data: bindingData));
+
+    if (slice) {
+      routes = routes.slice(0, routes.length - sliceCount).toList();
+    }
 
     dismissBar(context);
-    routes.add(PageRoutePoint(route: name, data: bindingData));
 
     router.router.go(name, extra: data);
     return true;
