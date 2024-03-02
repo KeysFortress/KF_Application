@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 
@@ -78,5 +82,21 @@ class LocalStorage implements IlocalStorage {
       //TODO add Logging in case of an exception
       return false;
     }
+  }
+
+  @override
+  Future<String> generateId() async {
+    var random = Random.secure();
+    var id = List<int>.generate(8, (index) => random.nextInt(256));
+    var idBytes = base64.encode(Uint8List.fromList(id));
+
+    var exists = await get(idBytes);
+    while (exists != null) {
+      idBytes = base64.encode(Uint8List.fromList(id));
+      exists = await get(idBytes);
+    }
+
+    await set("systemId", idBytes);
+    return idBytes;
   }
 }
