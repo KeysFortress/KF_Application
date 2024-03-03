@@ -35,7 +35,6 @@ class PageRouterService implements IPageRouterService {
   PageRouterService(IObserver current) {
     observer = current;
   }
-  late String self;
   @override
   backToPrevious(BuildContext context, {bool reverse = false}) {
     dismissBar(context);
@@ -97,7 +96,7 @@ class PageRouterService implements IPageRouterService {
     }
 
     dismissBar(context);
-    self = name;
+
     router.router.go(name, extra: data);
     return true;
   }
