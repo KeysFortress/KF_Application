@@ -35,23 +35,19 @@ class PageRouterService implements IPageRouterService {
   PageRouterService(IObserver current) {
     observer = current;
   }
-
+  late String self;
   @override
   backToPrevious(BuildContext context, {bool reverse = false}) {
     dismissBar(context);
-    PageRoutePoint point;
-    if (routes.length > 1)
+    PageRoutePoint? point;
+    if (routes.length > 1) {
       point = routes.elementAt(routes.length - 2);
-    else {
-      point = PageRoutePoint(
-        route: "/",
-      );
+      routes.removeLast();
     }
 
+    if (point == null) return;
+
     SystemChannels.textInput.invokeMethod('TextInput.hide');
-    routes.removeLast();
-    //TODO have to figure a better way for disposing. This leads to bugs.
-    // observer.disposeAll();
     context.go(
       point.route,
       extra: TransitionData(
@@ -101,7 +97,7 @@ class PageRouterService implements IPageRouterService {
     }
 
     dismissBar(context);
-
+    self = name;
     router.router.go(name, extra: data);
     return true;
   }
