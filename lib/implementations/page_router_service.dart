@@ -32,11 +32,16 @@ class PageRouterService implements IPageRouterService {
 
   @override
   late IObserver observer;
+
+  late bool isLocked = true;
+
   PageRouterService(IObserver current) {
     observer = current;
   }
   @override
   backToPrevious(BuildContext context, {bool reverse = false}) {
+    if (isLocked) return;
+
     dismissBar(context);
     PageRoutePoint? point;
     if (routes.length > 1) {
@@ -57,6 +62,8 @@ class PageRouterService implements IPageRouterService {
 
   @override
   backToPreviousFirst(BuildContext context, String route) {
+    if (isLocked) return;
+
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
     dismissBar(context);
@@ -85,6 +92,8 @@ class PageRouterService implements IPageRouterService {
       bool slice = false,
       int sliceCount = 1,
       bool saveRoute = true}) {
+    if (isLocked) return false;
+
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
     //TODO have to figure a better way for disposing. This leads to bugs.
