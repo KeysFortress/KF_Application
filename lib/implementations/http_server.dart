@@ -5,19 +5,31 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
 import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
+import 'package:infrastructure/interfaces/iidentity_manager.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
+import 'package:infrastructure/interfaces/iotp_service.dart';
+import 'package:infrastructure/interfaces/isecret_manager.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
+import 'package:infrastructure/interfaces/isync_service.dart';
 import 'package:infrastructure/interfaces/itoken_service.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:domain/converters/binary_converter.dart';
+import 'package:domain/models/stored_identity.dart';
+import 'package:domain/models/stored_secret.dart';
+import 'package:domain/models/otp_code.dart';
+import 'package:domain/models/enums.dart';
 
 class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
   late ISignatureService _signatureService;
   late IChallangeService _challangeService;
   late ITokenService _tokenService;
+  late ISecretManager _secretManager;
+  late IIdentityManager _identityManager;
+  late IOtpService _otpService;
+  late ISyncService _syncService;
 
   dio.HttpServer? _server;
   late Router _app;
@@ -26,11 +38,20 @@ class HttpServer implements IHttpServer {
       ILocalNetworkService localNetworkService,
       ISignatureService signatureService,
       IChallangeService challangeService,
-      ITokenService tokenService) {
+      ITokenService tokenService,
+      ISecretManager secretManager,
+      IIdentityManager identityManager,
+      IOtpService otpService,
+      ISyncService syncService) {
     _localNetworkService = localNetworkService;
     _signatureService = signatureService;
     _challangeService = challangeService;
     _tokenService = tokenService;
+
+    _secretManager = secretManager;
+    _identityManager = identityManager;
+    _otpService = otpService;
+    _syncService = syncService;
   }
 
   @override
@@ -108,17 +129,61 @@ class HttpServer implements IHttpServer {
     _app.post('/one-time-connection', (Request request) async {
       final payload = await request.readAsString();
 
+      await Clipboard.setData(
+        ClipboardData(
+          text: payload,
+        ),
+      );
+
+      Future.delayed(
+        Duration(seconds: 20),
+        () async {
+          await Clipboard.setData(ClipboardData(text: ""));
+        },
+      );
+
       return Response.ok(200);
     });
 
-    _app.post('/full-sync', (Request request) async {
+    _app.post('/set-sync-type', (Request request) async {
       final payload = await request.readAsString();
+      var decoded = jsonDecode(payload);
+      SyncTypes syncType = SyncTypes.otc;
+
+      switch (decoded["type"]) {
+        case "full":
+          syncType = SyncTypes.full;
+          break;
+        case "partial":
+          syncType = SyncTypes.partial;
+          break;
+      }
+
+      _syncService.setSyncType(decoded["id"], syncType);
 
       return Response.ok(200);
     });
 
-    _app.post('/partial-sync', (Request request) async {
+    _app.post('/sync', (Request request) async {
       final payload = await request.readAsString();
+
+      var decoded = jsonDecode(payload);
+
+      List<dynamic> identitiesData = decoded["identities"];
+      List<dynamic> secretsData = decoded["secrets"];
+      List<dynamic> otpData = decoded["otpSecrets"];
+
+      await _identityManager.importSecrets(
+        identitiesData.map((e) => StoredIdentity.fromJson(e)).toList(),
+      );
+
+      await _secretManager.importSecrets(
+        secretsData.map((e) => StoredSecret.fromJson(e)).toList(),
+      );
+
+      await _otpService.importCodes(
+        otpData.map((e) => OtpCode.fromJson(e)).toList(),
+      );
 
       return Response.ok(200);
     });

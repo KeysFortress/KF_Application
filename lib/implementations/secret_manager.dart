@@ -57,9 +57,9 @@ class SecretManger implements ISecretManager {
   @override
   Future<bool> importSecrets(List<StoredSecret> secrets) async {
     var secretsData = await localStorage.get("secrets");
-    if (secretsData == null) return false;
+    List<dynamic> data = [];
+    if (secretsData != null) data = jsonDecode(secretsData);
 
-    List<dynamic> data = jsonDecode(secretsData);
     List<StoredSecret> result = [];
     data.forEach((element) {
       var current = StoredSecret.fromJson(element);

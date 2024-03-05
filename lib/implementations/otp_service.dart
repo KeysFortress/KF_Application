@@ -66,4 +66,28 @@ class OtpService implements IOtpService {
     await localStorage.set("otp_data", jsonData);
     return true;
   }
+
+  @override
+  Future<bool> importCodes(List<OtpCode> optCodes) async {
+    var otpData = await localStorage.get("otp_data");
+    List<dynamic> data = [];
+    if (otpData != null) data = jsonDecode(otpData);
+
+    List<OtpCode> result = [];
+    data.forEach((element) {
+      var current = OtpCode.fromJson(element);
+      result.add(current);
+    });
+
+    optCodes.forEach((element) {
+      if (!result.any((stored) => stored.secret == element.secret)) {
+        result.add(element);
+      }
+    });
+
+    var json = result.map((e) => e.toJson()).toList();
+    var jsonData = jsonEncode(json);
+    await localStorage.set("otp_data", jsonData);
+    return true;
+  }
 }
