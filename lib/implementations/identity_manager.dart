@@ -46,9 +46,9 @@ class IdentityManager implements IIdentityManager {
   @override
   Future<bool> importSecrets(List<StoredIdentity> secrets) async {
     var secretsData = await _localStorage.get("identities");
-    if (secretsData == null) return false;
+    List<dynamic> data = [];
+    if (secretsData != null) data = jsonDecode(secretsData);
 
-    List<dynamic> data = jsonDecode(secretsData);
     List<StoredIdentity> result = [];
     data.forEach((element) {
       var current = StoredIdentity.fromJson(element);
