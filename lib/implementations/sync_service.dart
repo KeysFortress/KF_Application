@@ -43,12 +43,6 @@ class SyncService implements ISyncService {
   }
 
   @override
-  oneTimeSync(String deviceId, data) {
-    // TODO: implement oneTimeSync
-    throw UnimplementedError();
-  }
-
-  @override
   setPatrialSyncOptions(String deviceId, List<String> secrets,
       List<String> identities, List<String> otpCodes) {
     // TODO: implement setPatrialSyncOptions
@@ -84,7 +78,7 @@ class SyncService implements ISyncService {
       case SyncTypes.partial:
       // TODO: Handle this case.
       case SyncTypes.otc:
-      // TODO: Handle this case.
+        break;
     }
   }
 
@@ -99,20 +93,12 @@ class SyncService implements ISyncService {
     };
 
     var json = jsonEncode(data);
-    var getSessionToken = await _sessionService.getToken(device);
-    if (getSessionToken == null) {
-      var challange = await _localNetworkService.requestChallange(device);
-      var result =
-          await _localNetworkService.connectToDevice(device, challange);
-      if (!result) return;
-
-      getSessionToken = await _sessionService.getToken(device);
-    }
+    var token = await getSessionToken(device);
 
     var response = await _httpProviderService.postRequest(
       HttpRequest(
         "https://${device.ip}:${device.port}/sync",
-        {"Authorization": "Bearer $getSessionToken"},
+        {"Authorization": "Bearer $token"},
         json,
       ),
     );
@@ -160,6 +146,36 @@ class SyncService implements ISyncService {
       device,
       DeviceSyncEvent(genLogId, device.ip, DateTime.now(), exchangeData),
     );
+  }
+
+  @override
+  oneTimeSync(Device device, data) async {
+    var token = await getSessionToken(device);
+
+    var response = await _httpProviderService.postRequest(
+      HttpRequest(
+        "https://${device.ip}:${device.port}/one-time-connection",
+        {"Authorization": "Bearer $token"},
+        data,
+      ),
+    );
+
+    //TODO handle exceptions here.
+    if (response == null || response.statusCode != 200) return;
+  }
+
+  Future<String?> getSessionToken(Device device) async {
+    var getSessionToken = await _sessionService.getToken(device);
+    if (getSessionToken == null) {
+      var challange = await _localNetworkService.requestChallange(device);
+      var result =
+          await _localNetworkService.connectToDevice(device, challange);
+      if (!result) return null;
+
+      return await _sessionService.getToken(device);
+    }
+
+    return getSessionToken;
   }
 
   syncLog(
