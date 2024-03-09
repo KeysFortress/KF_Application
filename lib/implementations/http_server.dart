@@ -20,6 +20,7 @@ import 'package:domain/models/stored_identity.dart';
 import 'package:domain/models/stored_secret.dart';
 import 'package:domain/models/otp_code.dart';
 import 'package:domain/models/enums.dart';
+import 'package:domain/models/exchanged_data.dart';
 
 class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
@@ -128,12 +129,34 @@ class HttpServer implements IHttpServer {
 
     _app.post('/one-time-connection', (Request request) async {
       final payload = await request.readAsString();
+      var decoded = jsonDecode(payload);
+      int type = decoded['type'];
 
-      await Clipboard.setData(
-        ClipboardData(
-          text: payload,
-        ),
-      );
+      switch (type) {
+        case 1:
+          var identity = StoredIdentity.fromJson(decoded['identity']);
+          var result = await _signatureService.importKeyPair(
+            identity.publicKey,
+            identity.privateKey,
+          );
+
+          _signatureService.setTemporary(result);
+          break;
+        case 2:
+          await Clipboard.setData(
+            ClipboardData(
+              text: decoded['data'],
+            ),
+          );
+          break;
+        case 3:
+          await Clipboard.setData(
+            ClipboardData(
+              text: decoded['data'],
+            ),
+          );
+          break;
+      }
 
       Future.delayed(
         Duration(seconds: 20),
