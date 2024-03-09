@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:domain/models/stored_identity.dart';
 import 'package:infrastructure/interfaces/iidentity_manager.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
@@ -44,7 +45,9 @@ class IdentityManager implements IIdentityManager {
   }
 
   @override
-  Future<bool> importSecrets(List<StoredIdentity> secrets) async {
+  Future<List<StoredIdentity>> importSecrets(
+      List<StoredIdentity> secrets) async {
+    List<StoredIdentity> missing = [];
     var secretsData = await _localStorage.get("identities");
     List<dynamic> data = [];
     if (secretsData != null) data = jsonDecode(secretsData);
@@ -54,13 +57,30 @@ class IdentityManager implements IIdentityManager {
       var current = StoredIdentity.fromJson(element);
       result.add(current);
     });
-    secrets.forEach((element) {
+
+    missing = result
+        .where((element) =>
+            secrets.firstWhereOrNull(
+              (incomingSecret) =>
+                  incomingSecret.privateKey == element.privateKey,
+            ) ==
+            null)
+        .toList();
+
+    secrets
+        .where(
+      (element) =>
+          result.firstWhereOrNull(
+              (existing) => existing.privateKey == element.privateKey) ==
+          null,
+    )
+        .forEach((element) {
       result.add(element);
     });
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await _localStorage.set("identities", jsonData);
-    return true;
+    return missing;
   }
 
   @override

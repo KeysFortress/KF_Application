@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:domain/models/stored_secret.dart';
 import 'package:flutter/services.dart';
 
@@ -55,7 +56,9 @@ class SecretManger implements ISecretManager {
   }
 
   @override
-  Future<bool> importSecrets(List<StoredSecret> secrets) async {
+  Future<List<StoredSecret>> importSecrets(List<StoredSecret> secrets) async {
+    List<StoredSecret> missing = [];
+
     var secretsData = await localStorage.get("secrets");
     List<dynamic> data = [];
     if (secretsData != null) data = jsonDecode(secretsData);
@@ -65,13 +68,28 @@ class SecretManger implements ISecretManager {
       var current = StoredSecret.fromJson(element);
       result.add(current);
     });
-    secrets.forEach((element) {
+
+    missing = result
+        .where((element) =>
+            secrets.firstWhereOrNull((incomingSecret) =>
+                incomingSecret.content == element.content) ==
+            null)
+        .toList();
+
+    secrets
+        .where((incomingSecret) =>
+            result.firstWhereOrNull(
+                (element) => element.content == incomingSecret.content) ==
+            null)
+        .toList()
+        .forEach((element) {
       result.add(element);
     });
+
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await localStorage.set("secrets", jsonData);
-    return true;
+    return missing;
   }
 
   @override

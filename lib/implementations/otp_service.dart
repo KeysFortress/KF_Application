@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:domain/models/otp_code.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/iotp_service.dart';
@@ -68,7 +69,8 @@ class OtpService implements IOtpService {
   }
 
   @override
-  Future<bool> importCodes(List<OtpCode> optCodes) async {
+  Future<List<OtpCode>> importCodes(List<OtpCode> optCodes) async {
+    List<OtpCode> missing = [];
     var otpData = await localStorage.get("otp_data");
     List<dynamic> data = [];
     if (otpData != null) data = jsonDecode(otpData);
@@ -79,6 +81,13 @@ class OtpService implements IOtpService {
       result.add(current);
     });
 
+    missing = result
+        .where((element) =>
+            optCodes.firstWhereOrNull(
+                (codeData) => codeData.secret == element.secret) ==
+            null)
+        .toList();
+
     optCodes.forEach((element) {
       if (!result.any((stored) => stored.secret == element.secret)) {
         result.add(element);
@@ -88,6 +97,6 @@ class OtpService implements IOtpService {
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await localStorage.set("otp_data", jsonData);
-    return true;
+    return missing;
   }
 }
