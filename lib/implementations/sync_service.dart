@@ -1,6 +1,10 @@
 import 'dart:convert';
-import 'package:cryptography/src/cryptography/simple_key_pair.dart';
+import 'package:domain/models/device_sync_event.dart';
+import 'package:domain/models/exchanged_data.dart';
 import 'package:domain/models/device.dart';
+import 'package:domain/models/stored_identity.dart';
+import 'package:domain/models/stored_secret.dart';
+import 'package:domain/models/otp_code.dart';
 import 'package:domain/models/enums.dart';
 import 'package:domain/models/http_request.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
@@ -116,17 +120,63 @@ class SyncService implements ISyncService {
     //TODO handle exceptions here.
     if (response == null || response.statusCode != 200) return;
 
-    var genLogId = _storage.generateId();
-    var credentials = await _localNetworkService.getCredentails(device);
+    var genLogId = await _storage.generateId();
+    var decoded = jsonDecode(response.body);
 
-    syncLog(device, genLogId, credentials);
+    List<dynamic> identitiesMissingData = decoded["identities"];
+    List<dynamic> secretsMissingData = decoded["secrets"];
+    List<dynamic> otpMissingData = decoded["otpSecrets"];
+
+    List<ExchangedData> exchangeData = [];
+    var exchangedIdentities = identitiesMissingData.map(
+      (e) {
+        var item = StoredIdentity.fromJson(e);
+        exchangeData.add(ExchangedData(item.name, 1, true));
+        return item;
+      },
+    ).toList();
+    var exchangedSecrets = secretsMissingData.map(
+      (e) {
+        var secret = StoredSecret.fromJson(e);
+        exchangeData.add(ExchangedData(secret.name, 2, true));
+        return secret;
+      },
+    ).toList();
+    var exchangedOtp = otpMissingData.map(
+      (e) {
+        var otp = OtpCode.fromJson(e);
+        exchangeData.add(
+          ExchangedData("${otp.address} - ${otp.issuer}", 3, true),
+        );
+        return otp;
+      },
+    ).toList();
+
+    await _identityManager.importSecrets(exchangedIdentities);
+    await _secretManager.importSecrets(exchangedSecrets);
+    await _otpService.importCodes(exchangedOtp);
+
+    await syncLog(
+      device,
+      DeviceSyncEvent(genLogId, device.ip, DateTime.now(), exchangeData),
+    );
   }
 
-  void syncLog(
+  syncLog(
     Device device,
-    Future<String> genLogId,
-    SimpleKeyPair credentials,
-  ) {
-    //TODO add logs for saved sync events
+    DeviceSyncEvent event,
+  ) async {
+    var tryParse = event.toJson();
+    print(tryParse);
+
+    var logData = await _storage.get("${device.mac}-sync-logs");
+    List<dynamic> data = [];
+    if (logData != null) data = jsonDecode(logData);
+
+    var syncData = data.map((e) => DeviceSyncEvent.fromJson(e)).toList();
+    syncData.add(event);
+    var json = syncData.map((e) => e.toJson()).toList();
+    var jsonData = jsonEncode(json);
+    await _storage.set("${device.mac}-sync-logs", jsonData);
   }
 }
