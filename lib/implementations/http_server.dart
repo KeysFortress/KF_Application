@@ -123,7 +123,7 @@ class HttpServer implements IHttpServer {
       final payload = await request.readAsString();
       var isValid = _tokenService.validateToken(payload);
 
-      return isValid ? Response.ok(200) : Response.badRequest();
+      return isValid ? Response.ok("Connected") : Response.badRequest();
     });
 
     _app.post('/one-time-connection', (Request request) async {
@@ -142,7 +142,7 @@ class HttpServer implements IHttpServer {
         },
       );
 
-      return Response.ok(200);
+      return Response.ok("");
     });
 
     _app.post('/set-sync-type', (Request request) async {
@@ -161,7 +161,7 @@ class HttpServer implements IHttpServer {
 
       _syncService.setSyncType(decoded["id"], syncType);
 
-      return Response.ok(200);
+      return Response.ok("");
     });
 
     _app.post('/sync', (Request request) async {
@@ -173,19 +173,25 @@ class HttpServer implements IHttpServer {
       List<dynamic> secretsData = decoded["secrets"];
       List<dynamic> otpData = decoded["otpSecrets"];
 
-      await _identityManager.importSecrets(
+      var missingIdentities = await _identityManager.importSecrets(
         identitiesData.map((e) => StoredIdentity.fromJson(e)).toList(),
       );
 
-      await _secretManager.importSecrets(
+      var missingSecrets = await _secretManager.importSecrets(
         secretsData.map((e) => StoredSecret.fromJson(e)).toList(),
       );
 
-      await _otpService.importCodes(
+      var missingOtpCodes = await _otpService.importCodes(
         otpData.map((e) => OtpCode.fromJson(e)).toList(),
       );
 
-      return Response.ok(200);
+      var jsonData = jsonEncode({
+        'secrets': missingSecrets.map((e) => e.toJson()).toList(),
+        'identities': missingIdentities.map((e) => e.toJson()).toList(),
+        'otpSecrets': missingOtpCodes.map((e) => e.toJson()).toList()
+      });
+
+      return Response.ok(jsonData);
     });
 
     _server = await io.serve(
