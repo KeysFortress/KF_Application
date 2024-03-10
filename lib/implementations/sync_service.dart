@@ -149,7 +149,7 @@ class SyncService implements ISyncService {
       case SyncTypes.full:
         performFullSync(device);
       case SyncTypes.partial:
-      // TODO: Handle this case.
+        performPartialSync(device);
       case SyncTypes.otc:
         break;
     }
@@ -217,7 +217,74 @@ class SyncService implements ISyncService {
 
     await syncLog(
       device,
-      DeviceSyncEvent(genLogId, device.ip, DateTime.now(), exchangeData),
+      DeviceSyncEvent(genLogId, device.ip, DateTime.now(), exchangeData, 1),
+    );
+  }
+
+  performPartialSync(Device device) async {
+    var syncData = await getPartialData(device.mac);
+    var localNetworkData = await _localNetworkService.getNetworkData();
+
+    var data = {
+      'id': localNetworkData.mac,
+      'secrets': syncData.secrets.map((e) => e.toJson()).toList(),
+      'identities': syncData.identities.map((e) => e.toJson()).toList(),
+      'otpSecrets': syncData.otpCodes.map((e) => e.toJson()).toList()
+    };
+
+    var json = jsonEncode(data);
+    var token = await getSessionToken(device);
+
+    var response = await _httpProviderService.postRequest(
+      HttpRequest(
+        "https://${device.ip}:${device.port}/sync-partial",
+        {"Authorization": "Bearer $token"},
+        json,
+      ),
+    );
+
+    //TODO handle exceptions here.
+    if (response == null || response.statusCode != 200) return;
+
+    var genLogId = await _storage.generateId();
+    var decoded = jsonDecode(response.body);
+
+    List<dynamic> identitiesMissingData = decoded["identities"];
+    List<dynamic> secretsMissingData = decoded["secrets"];
+    List<dynamic> otpMissingData = decoded["otpSecrets"];
+
+    List<ExchangedData> exchangeData = [];
+    var exchangedIdentities = identitiesMissingData.map(
+      (e) {
+        var item = StoredIdentity.fromJson(e);
+        exchangeData.add(ExchangedData(item.name, 1, true));
+        return item;
+      },
+    ).toList();
+    var exchangedSecrets = secretsMissingData.map(
+      (e) {
+        var secret = StoredSecret.fromJson(e);
+        exchangeData.add(ExchangedData(secret.name, 2, true));
+        return secret;
+      },
+    ).toList();
+    var exchangedOtp = otpMissingData.map(
+      (e) {
+        var otp = OtpCode.fromJson(e);
+        exchangeData.add(
+          ExchangedData("${otp.address} - ${otp.issuer}", 3, true),
+        );
+        return otp;
+      },
+    ).toList();
+
+    await _identityManager.importSecrets(exchangedIdentities);
+    await _secretManager.importSecrets(exchangedSecrets);
+    await _otpService.importCodes(exchangedOtp);
+
+    await syncLog(
+      device,
+      DeviceSyncEvent(genLogId, device.ip, DateTime.now(), exchangeData, 2),
     );
   }
 
@@ -235,6 +302,19 @@ class SyncService implements ISyncService {
 
     //TODO handle exceptions here.
     if (response == null || response.statusCode != 200) return;
+
+    var genLogId = await _storage.generateId();
+
+    syncLog(
+      device,
+      DeviceSyncEvent(
+        genLogId,
+        device.ip,
+        DateTime.now(),
+        [],
+        3,
+      ),
+    );
   }
 
   Future<String?> getSessionToken(Device device) async {
