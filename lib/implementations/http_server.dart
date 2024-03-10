@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io' as dio;
 
+import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
 import 'package:infrastructure/interfaces/ichallanage_service.dart';
@@ -212,6 +213,68 @@ class HttpServer implements IHttpServer {
         'secrets': missingSecrets.map((e) => e.toJson()).toList(),
         'identities': missingIdentities.map((e) => e.toJson()).toList(),
         'otpSecrets': missingOtpCodes.map((e) => e.toJson()).toList()
+      });
+
+      return Response.ok(jsonData);
+    });
+
+    _app.post('/sync-partial', (Request request) async {
+      final payload = await request.readAsString();
+
+      var decoded = jsonDecode(payload);
+      var id = decoded['id'];
+      List<dynamic> identitiesData = decoded["identities"];
+      List<dynamic> secretsData = decoded["secrets"];
+      List<dynamic> otpData = decoded["otpSecrets"];
+
+      var missingIdentities = await _identityManager.importSecrets(
+        identitiesData.map((e) => StoredIdentity.fromJson(e)).toList(),
+      );
+
+      var missingSecrets = await _secretManager.importSecrets(
+        secretsData.map((e) => StoredSecret.fromJson(e)).toList(),
+      );
+
+      var missingOtpCodes = await _otpService.importCodes(
+        otpData.map((e) => OtpCode.fromJson(e)).toList(),
+      );
+
+      var getPartialData = await _syncService.getPartialData(id);
+
+      var exchangeSecret = getPartialData.secrets
+          .where(
+            (element) =>
+                missingSecrets.firstWhereOrNull(
+                  (storedMissing) => storedMissing.id == element.id,
+                ) !=
+                null,
+          )
+          .toList();
+
+      var exchangeIdenties = getPartialData.identities
+          .where(
+            (element) =>
+                missingIdentities.firstWhereOrNull(
+                  (storedMissing) => storedMissing.id == element.id,
+                ) !=
+                null,
+          )
+          .toList();
+
+      var exchangeOtps = getPartialData.identities
+          .where(
+            (element) =>
+                missingOtpCodes.firstWhereOrNull(
+                  (storedMissing) => storedMissing.id == element.id,
+                ) !=
+                null,
+          )
+          .toList();
+
+      var jsonData = jsonEncode({
+        'secrets': exchangeSecret.map((e) => e.toJson()).toList(),
+        'identities': exchangeIdenties.map((e) => e.toJson()).toList(),
+        'otpSecrets': exchangeOtps.map((e) => e.toJson()).toList()
       });
 
       return Response.ok(jsonData);
