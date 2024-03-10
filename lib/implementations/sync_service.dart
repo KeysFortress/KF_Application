@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:domain/models/device_sync_event.dart';
 import 'package:domain/models/exchanged_data.dart';
 import 'package:domain/models/device.dart';
+import 'package:domain/models/selectable_exchange_data.dart';
 import 'package:domain/models/stored_identity.dart';
 import 'package:domain/models/stored_secret.dart';
 import 'package:domain/models/otp_code.dart';
@@ -43,10 +44,82 @@ class SyncService implements ISyncService {
   }
 
   @override
+  Future<SelectableExchangeData> getPartialData(String deviceId) async {
+    var partialDataSecrets = await _storage.get("$deviceId-sync-secrets");
+    List<dynamic> partialDataSecretsItems = [];
+    if (partialDataSecrets != null)
+      partialDataSecretsItems = jsonDecode(partialDataSecrets);
+
+    var partialDataIdentities = await _storage.get("$deviceId-sync-identities");
+    List<dynamic> partialDataIdentitiesItems = [];
+    if (partialDataIdentities != null)
+      partialDataIdentitiesItems = jsonDecode(partialDataIdentities);
+
+    var partialDataOtpCodes = await _storage.get("$deviceId-sync-otpCodes");
+    List<dynamic> partialDataOtpCodesItems = [];
+    if (partialDataOtpCodes != null)
+      partialDataOtpCodesItems = jsonDecode(partialDataOtpCodes);
+
+    var secrets = await _secretManager.getSecrets();
+    var identities = await _identityManager.getSecrets();
+    var otpCodes = await _otpService.get();
+
+    var matchingSecrets = secrets
+        .where(
+          (element) =>
+              partialDataSecretsItems.any((stored) => stored == element.id),
+        )
+        .toList();
+    var matchingIdentities = identities
+        .where(
+          (element) =>
+              partialDataIdentitiesItems.any((stored) => stored == element.id),
+        )
+        .toList();
+    var matchingOtpCodes = otpCodes
+        .where(
+          (element) =>
+              partialDataOtpCodesItems.any((stored) => stored == element.id),
+        )
+        .toList();
+
+    return SelectableExchangeData(
+      matchingSecrets,
+      matchingIdentities,
+      matchingOtpCodes,
+    );
+  }
+
+  @override
   setPatrialSyncOptions(String deviceId, List<String> secrets,
-      List<String> identities, List<String> otpCodes) {
-    // TODO: implement setPatrialSyncOptions
-    throw UnimplementedError();
+      List<String> identities, List<String> otpCodes) async {
+    var partialDataSecrets = await _storage.get("$deviceId-sync-secrets");
+    List<dynamic> partialDataSecretsItems = [];
+    if (partialDataSecrets != null)
+      partialDataSecretsItems = jsonDecode(partialDataSecrets);
+
+    var partialDataIdentities = await _storage.get("$deviceId-sync-identities");
+    List<dynamic> partialDataIdentitiesItems = [];
+    if (partialDataIdentities != null)
+      partialDataIdentitiesItems = jsonDecode(partialDataIdentities);
+
+    var partialDataOtpCodes = await _storage.get("$deviceId-sync-otpCodes");
+    List<dynamic> partialDataOtpCodesItems = [];
+    if (partialDataOtpCodes != null)
+      partialDataOtpCodesItems = jsonDecode(partialDataOtpCodes);
+
+    partialDataSecretsItems = secrets;
+    partialDataIdentitiesItems = identities;
+    partialDataOtpCodesItems = otpCodes;
+
+    var secretsJsonData = jsonEncode(partialDataSecretsItems);
+    await _storage.set("$deviceId-sync-secrets", secretsJsonData);
+
+    var identitiesItemsJsonData = jsonEncode(partialDataIdentitiesItems);
+    await _storage.set("$deviceId-sync-identities", identitiesItemsJsonData);
+
+    var dataOtpCodesItemsJsonData = jsonEncode(partialDataOtpCodesItems);
+    await _storage.set("$deviceId-sync-otpCodes", dataOtpCodesItemsJsonData);
   }
 
   @override
