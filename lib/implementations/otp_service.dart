@@ -2,14 +2,18 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:domain/models/otp_code.dart';
+import 'package:infrastructure/interfaces/idevices_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/iotp_service.dart';
 import 'package:otp/otp.dart';
 
 class OtpService implements IOtpService {
   late IlocalStorage localStorage;
-  OtpService(IlocalStorage storage) {
+  late IDevicesService _devicesService;
+
+  OtpService(IlocalStorage storage, IDevicesService devicesService) {
     localStorage = storage;
+    _devicesService = devicesService;
   }
 
   @override
@@ -24,6 +28,8 @@ class OtpService implements IOtpService {
       DateTime.now().millisecondsSinceEpoch,
     );
     current.code = code;
+
+    _devicesService.syncDevices();
     return current;
   }
 
