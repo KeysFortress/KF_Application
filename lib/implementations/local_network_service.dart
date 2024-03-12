@@ -256,4 +256,10 @@ class LocalNetworkService implements ILocalNetworkService {
 
     return challangeResponse.body;
   }
+
+  @override
+  Future<List<Device>> getSyncDevices() async {
+    var devices = await _devicesService.all();
+    return devices;
+  }
 }

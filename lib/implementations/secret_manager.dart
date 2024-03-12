@@ -4,19 +4,17 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:domain/models/stored_secret.dart';
 import 'package:flutter/services.dart';
-import 'package:infrastructure/interfaces/idevices_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isecret_manager.dart';
 
 class SecretManger implements ISecretManager {
   final IlocalStorage localStorage;
-  late IDevicesService devicesService;
   final String lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
   final String uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   final String digitChars = '0123456789';
   final String specialChars = r'!@#$%^&*()-_=+[]{}|;:,.<>?/';
 
-  SecretManger({required this.localStorage, required this.devicesService});
+  SecretManger({required this.localStorage});
 
   @override
   String generateSecret({
@@ -117,7 +115,6 @@ class SecretManger implements ISecretManager {
     var jsonData = jsonEncode(json);
     await localStorage.set("secrets", jsonData);
 
-    devicesService.syncDevices();
     return true;
   }
 
