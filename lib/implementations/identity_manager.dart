@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:domain/models/stored_identity.dart';
-import 'package:infrastructure/interfaces/idevices_service.dart';
 import 'package:infrastructure/interfaces/iidentity_manager.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
@@ -12,13 +11,13 @@ import 'package:domain/converters/binary_converter.dart';
 class IdentityManager implements IIdentityManager {
   late ISignatureService _signatureService;
   late IlocalStorage _localStorage;
-  late IDevicesService _devicesService;
 
-  IdentityManager(ISignatureService signatureService, IlocalStorage storage,
-      IDevicesService devicesService) {
+  IdentityManager(
+    ISignatureService signatureService,
+    IlocalStorage storage,
+  ) {
     _signatureService = signatureService;
     _localStorage = storage;
-    _devicesService = devicesService;
   }
 
   @override
@@ -111,7 +110,7 @@ class IdentityManager implements IIdentityManager {
     var json = result.map((e) => e.toJson()).toList();
     var jsonData = jsonEncode(json);
     await _localStorage.set("identities", jsonData);
-    _devicesService.syncDevices();
+
     return true;
   }
 }

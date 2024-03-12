@@ -6,17 +6,14 @@ import 'package:domain/models/http_request.dart';
 import 'package:infrastructure/interfaces/idevices_service.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
-import 'package:infrastructure/interfaces/isync_service.dart';
 
 class DeviceService implements IDevicesService {
   late IlocalStorage _storage;
   late IHttpProviderService _providerService;
-  late ISyncService _syncService;
-  DeviceService(IlocalStorage storage, IHttpProviderService httpProviderService,
-      ISyncService syncService) {
+  DeviceService(
+      IlocalStorage storage, IHttpProviderService httpProviderService) {
     _storage = storage;
     _providerService = httpProviderService;
-    _syncService = syncService;
   }
 
   @override
@@ -92,19 +89,6 @@ class DeviceService implements IDevicesService {
 
     if (response == null || response.statusCode != 200) return false;
 
-    return true;
-  }
-
-  @override
-  Future<bool> syncDevices() async {
-    var devices = await all();
-    for (var device in devices) {
-      var isConnected = await isDeviceConnected(device);
-
-      if (isConnected) {
-        await _syncService.synchronize(device);
-      }
-    }
     return true;
   }
 }
