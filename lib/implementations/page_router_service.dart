@@ -34,10 +34,13 @@ class PageRouterService implements IPageRouterService {
   late IObserver observer;
 
   late bool isLocked = true;
+  late BuildContext lastContext;
+  bool isBoxOpen = false;
 
   PageRouterService(IObserver current) {
     observer = current;
   }
+
   @override
   backToPrevious(BuildContext context, {bool reverse = false}) {
     if (isLocked) return;
@@ -139,6 +142,8 @@ class PageRouterService implements IPageRouterService {
   @override
   openBar(Widget content, BuildContext context,
       {double? width, double? height}) async {
+    lastContext = context;
+    isBoxOpen = true;
     showModalBottomSheet(
         constraints: BoxConstraints(
           minWidth: width ?? 200,
@@ -166,6 +171,9 @@ class PageRouterService implements IPageRouterService {
   @override
   openDialog(Widget content, BuildContext context,
       {double? width, double? height}) {
+    lastContext = context;
+    isBoxOpen = true;
+
     showDialog(
       barrierDismissible: true,
       useSafeArea: true,
@@ -183,6 +191,8 @@ class PageRouterService implements IPageRouterService {
 
   @override
   dismissBar(BuildContext context) async {
+    isBoxOpen = false;
+
     Navigator.pop(context);
   }
 }
