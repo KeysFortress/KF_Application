@@ -317,6 +317,19 @@ class SyncService implements ISyncService {
     );
   }
 
+  @override
+  Future<List<DeviceSyncEvent>> getSyncLog(String mac) async {
+    try {
+      var logData = await _storage.get("$mac-sync-logs");
+      if (logData == null) return [];
+
+      List<dynamic> decoded = jsonDecode(logData);
+      return decoded.map((e) => DeviceSyncEvent.fromJson(e)).toList();
+    } catch (ex) {
+      return [];
+    }
+  }
+
   Future<String?> getSessionToken(Device device) async {
     var getSessionToken = await _sessionService.getToken(device);
     if (getSessionToken == null) {
