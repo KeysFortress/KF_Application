@@ -262,4 +262,28 @@ class LocalNetworkService implements ILocalNetworkService {
     var devices = await _devicesService.all();
     return devices;
   }
+
+  @override
+  Future<String> getLocalAddress() async {
+    // Get the list of network interfaces
+    List<NetworkInterface> interfaces = await NetworkInterface.list(
+      includeLoopback: false,
+      type: InternetAddressType.IPv4,
+    );
+
+    // Iterate through the interfaces to find a non-loopback interface
+    for (NetworkInterface interface in interfaces) {
+      // Iterate through the addresses of the interface
+      for (InternetAddress address in interface.addresses) {
+        // Check if the address is not loopback and is IPv4
+        if (!address.isLoopback && address.type == InternetAddressType.IPv4) {
+          // Return the IP address
+          return address.address;
+        }
+      }
+    }
+
+    // If no suitable address is found, return a default value
+    return 'Could not determine IP address';
+  }
 }
