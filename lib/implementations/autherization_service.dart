@@ -83,4 +83,76 @@ class AutherizationService implements IAuthorizationService {
 
     return val == convertToString;
   }
+
+  @override
+  Future<int> getTimeLockTime() async {
+    var val = await _localStorage.get("lock_time");
+    if (val == null) return 60;
+
+    return int.parse(val);
+  }
+
+  @override
+  Future<bool> isMinimizeLockEnabled() async {
+    var val = await _localStorage.get("lock_minimize");
+    if (val == null) return true;
+
+    return val == "1";
+  }
+
+  @override
+  Future<bool> setMinimizeLockEnabled(bool state) async {
+    try {
+      await _localStorage.set("lock_minimize", state ? "1" : "0");
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isTimeLockEnabled() async {
+    var val = await _localStorage.get("lock_time_enabled");
+    if (val == null) return true;
+
+    return val == "1";
+  }
+
+  @override
+  Future<bool> setLockTimeEnabled(bool state) async {
+    try {
+      await _localStorage.set("lock_time_enabled", state ? "1" : "0");
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setLockTime(int lockTime) async {
+    try {
+      await _localStorage.set("lock_time", lockTime.toString());
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isDeviceLockEnabled() async {
+    var val = await _localStorage.get("lock_enabled");
+    if (val == null) return true;
+
+    return val == "1";
+  }
+
+  @override
+  Future<bool> setDeviceLockEnabled(bool state) async {
+    try {
+      await _localStorage.set("lock_enabled", state ? "1" : "0");
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
 }
