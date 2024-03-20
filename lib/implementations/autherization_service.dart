@@ -155,4 +155,40 @@ class AutherizationService implements IAuthorizationService {
       return false;
     }
   }
+
+  @override
+  Future<bool> setSelfDestructAttempts(int totalAttempts) async {
+    try {
+      await _localStorage.set("unlock_attempts", totalAttempts.toString());
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<int> getSelfDestructAttemts() async {
+    var val = await _localStorage.get("unlock_attempts");
+    if (val == null) return 3;
+
+    return int.parse(val);
+  }
+
+  @override
+  Future<bool> setSelfDestructState(bool value) async {
+    try {
+      await _localStorage.set("self_destruct", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> selfDestructActivated() async {
+    var val = await _localStorage.get("self_destruct");
+    if (val == null) return false;
+
+    return val == "1";
+  }
 }
