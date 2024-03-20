@@ -99,4 +99,20 @@ class LocalStorage implements IlocalStorage {
     await set("systemId", idBytes);
     return idBytes;
   }
+
+  @override
+  Future<bool> wipeData() async {
+    try {
+      await _prefs.deleteAll(
+        aOptions: _androidOptions,
+        iOptions: _iosOptions,
+        lOptions: _linuxOptions,
+        mOptions: _macOsOptions,
+        wOptions: _windowsOptions,
+      );
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
 }
