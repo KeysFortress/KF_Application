@@ -25,7 +25,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   otp: ^3.1.4
   shelf_router: ^1.1.4
-  device_info_plus: ^9.1.2
+  device_info_plus: ^10.0.1
   crypto: ^3.0.3
   asn1lib: ^1.5.2
   dart_jsonwebtoken: ^2.13.0

@@ -100,12 +100,15 @@ class LocalNetworkService implements ILocalNetworkService {
   }
 
   Future<String> getDeviceName() async {
+    var exists = await _storage.get("device_name");
+    if (exists != null) return exists;
+
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     var identifier = "";
 
     if (Platform.isAndroid) {
       var info = await deviceInfo.androidInfo;
-      identifier = info.display;
+      identifier = info.model;
     }
 
     if (Platform.isIOS) {
@@ -285,5 +288,15 @@ class LocalNetworkService implements ILocalNetworkService {
 
     // If no suitable address is found, return a default value
     return 'Could not determine IP address';
+  }
+
+  @override
+  Future<bool> overrideDeviceName(String name) async {
+    try {
+      await _storage.set("device_name", name);
+      return true;
+    } catch (ex) {
+      return false;
+    }
   }
 }
