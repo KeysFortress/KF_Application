@@ -361,4 +361,223 @@ class SyncService implements ISyncService {
     var jsonData = jsonEncode(json);
     await _storage.set("${device.mac}-sync-logs", jsonData);
   }
+
+  @override
+  Future<bool> setServiceState(bool value) async {
+    try {
+      await _storage.set("global-sync-enabled", value ? "1" : "0");
+      if (!value) {
+        await setSyncOnAction(false);
+        await setPasswordAction(false);
+        await setIdentityAction(false);
+        await setSecretAction(false);
+        await setRacAction(false);
+        await setRlcAction(false);
+        await setTotpAction(false);
+        await onConnectionAction(false);
+      }
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setSyncOnAction(bool value) async {
+    try {
+      await _storage.set("global-sync-on-action-enabled", value ? "1" : "0");
+      if (!value) {
+        await setPasswordAction(false);
+        await setIdentityAction(false);
+        await setSecretAction(false);
+        await setRacAction(false);
+        await setRlcAction(false);
+        await setTotpAction(false);
+      }
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setPasswordAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-password-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setIdentityAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-identity-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setSecretAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-secret-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setRacAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-rac-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setRlcAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-rlc-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setTotpAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-totp-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> onConnectionAction(bool value) async {
+    try {
+      await _storage.set(
+          "global-sync-on-connection-action-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setTimeBasedSyncAction(bool value) async {
+    try {
+      await _storage.set("global-time-based-sync-enabled", value ? "1" : "0");
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> updateTimeToSync(int syncTime) async {
+    try {
+      await _storage.set("global-sync-time-threshold", syncTime);
+      return true;
+    } catch (ex) {
+      //TODO add logging
+      return false;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getGlobalSettings() async {
+    var updateTime = await _storage.get("global-sync-time-threshold");
+    var timeBasedSyncEnabled =
+        await _storage.get("global-time-based-sync-enabled");
+    var onConnectionAction =
+        await _storage.get("global-sync-on-connection-action-enabled");
+    var onTotpAction = await _storage.get("global-sync-on-totp-action-enabled");
+    var onRlcAction = await _storage.get("global-sync-on-rlc-action-enabled");
+    var onRacAction = await _storage.get("global-sync-on-rac-action-enabled");
+    var onSecretAction =
+        await _storage.get("global-sync-on-secret-action-enabled");
+    var onIdentityAction =
+        await _storage.get("global-sync-on-identity-action-enabled");
+    var onPasswordAction = await _storage.get("global-sync-on-action-enabled");
+    var enabled = await _storage.get("global-sync-enabled");
+    var onAction = await _storage.get("global-sync-on-action-enabled");
+
+    return {
+      'updateTime': updateTime != null ? int.parse(updateTime) : 60,
+      'timeBasedSync': timeBasedSyncEnabled != null
+          ? timeBasedSyncEnabled == "1"
+              ? true
+              : false
+          : false,
+      'onConnection': onConnectionAction != null
+          ? onConnectionAction == "1"
+              ? true
+              : false
+          : false,
+      'onTotp': onTotpAction != null
+          ? onTotpAction == "1"
+              ? true
+              : false
+          : false,
+      'onRlc': onRlcAction != null
+          ? onRlcAction == "1"
+              ? true
+              : false
+          : false,
+      'onRac': onRacAction != null
+          ? onRacAction == "1"
+              ? true
+              : false
+          : false,
+      'onSecret': onSecretAction != null
+          ? onSecretAction == "1"
+              ? true
+              : false
+          : false,
+      'onIdentity': onIdentityAction != null
+          ? onIdentityAction == "1"
+              ? true
+              : false
+          : false,
+      'onPassword': onPasswordAction != null
+          ? onPasswordAction == "1"
+              ? true
+              : false
+          : false,
+      'enabled': enabled != null
+          ? enabled == "1"
+              ? true
+              : false
+          : false,
+      'onAction': onAction != null
+          ? onAction == "1"
+              ? true
+              : false
+          : false,
+    };
+  }
 }
