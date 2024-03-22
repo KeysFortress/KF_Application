@@ -4,6 +4,7 @@ import 'dart:io' as dio;
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
+import 'package:infrastructure/interfaces/icertificate_service.dart';
 import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
 import 'package:infrastructure/interfaces/iidentity_manager.dart';
@@ -21,7 +22,6 @@ import 'package:domain/models/stored_identity.dart';
 import 'package:domain/models/stored_secret.dart';
 import 'package:domain/models/otp_code.dart';
 import 'package:domain/models/enums.dart';
-import 'package:domain/models/exchanged_data.dart';
 
 class HttpServer implements IHttpServer {
   late ILocalNetworkService _localNetworkService;
@@ -32,7 +32,7 @@ class HttpServer implements IHttpServer {
   late IIdentityManager _identityManager;
   late IOtpService _otpService;
   late ISyncService _syncService;
-
+  late ICertificateService _certificateService;
   dio.HttpServer? _server;
   late Router _app;
 
@@ -44,16 +44,17 @@ class HttpServer implements IHttpServer {
       ISecretManager secretManager,
       IIdentityManager identityManager,
       IOtpService otpService,
-      ISyncService syncService) {
+      ISyncService syncService,
+      ICertificateService certificateService) {
     _localNetworkService = localNetworkService;
     _signatureService = signatureService;
     _challangeService = challangeService;
     _tokenService = tokenService;
-
     _secretManager = secretManager;
     _identityManager = identityManager;
     _otpService = otpService;
     _syncService = syncService;
+    _certificateService = certificateService;
   }
 
   @override
@@ -64,11 +65,9 @@ class HttpServer implements IHttpServer {
 
   @override
   Future startServer() async {
-    final certPath = 'lib/certificates/cert.pem';
-    final keyPath = 'lib/certificates/key.pem';
-
-    final certData = await rootBundle.load(certPath);
-    final keyData = await rootBundle.load(keyPath);
+    var sslData = await _certificateService.get();
+    var certData = sslData["Certificate"] as ByteData;
+    var keyData = sslData["Key"] as ByteData;
 
     _app = Router();
 
