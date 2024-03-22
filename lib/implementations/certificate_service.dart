@@ -37,9 +37,15 @@ class CertificateService implements ICertificateService {
   @override
   Future<List<X509CertificateData>> read() async {
     try {
-      final certData = await rootBundle.loadString(certPath);
+      var certData = await rootBundle.load(certPath);
 
-      var x509PEM = X509Utils.parseChainString(certData);
+      var certificate = await _localStorage.get("certificate_override");
+      if (certificate != null) {
+        certData = base64.decode(certificate).buffer.asByteData();
+      }
+
+      var data = new String.fromCharCodes(certData.buffer.asUint8List());
+      var x509PEM = X509Utils.parseChainString(data);
       return x509PEM;
     } catch (ex) {
       return [];
