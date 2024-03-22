@@ -366,16 +366,16 @@ class SyncService implements ISyncService {
   Future<bool> setServiceState(bool value) async {
     try {
       await _storage.set("global-sync-enabled", value ? "1" : "0");
-      if (!value) {
-        await setSyncOnAction(false);
-        await setPasswordAction(false);
-        await setIdentityAction(false);
-        await setSecretAction(false);
-        await setRacAction(false);
-        await setRlcAction(false);
-        await setTotpAction(false);
-        await onConnectionAction(false);
-      }
+
+      await setSyncOnAction(value);
+      await setPasswordAction(value);
+      await setIdentityAction(value);
+      await setSecretAction(value);
+      await setRacAction(value);
+      await setRlcAction(value);
+      await setTotpAction(value);
+      await onConnectionAction(value);
+
       return true;
     } catch (ex) {
       //TODO add logging
@@ -387,14 +387,12 @@ class SyncService implements ISyncService {
   Future<bool> setSyncOnAction(bool value) async {
     try {
       await _storage.set("global-sync-on-action-enabled", value ? "1" : "0");
-      if (!value) {
-        await setPasswordAction(false);
-        await setIdentityAction(false);
-        await setSecretAction(false);
-        await setRacAction(false);
-        await setRlcAction(false);
-        await setTotpAction(false);
-      }
+      await setPasswordAction(value);
+      await setIdentityAction(value);
+      await setSecretAction(value);
+      await setRacAction(value);
+      await setRlcAction(value);
+      await setTotpAction(value);
       return true;
     } catch (ex) {
       //TODO add logging
@@ -532,52 +530,52 @@ class SyncService implements ISyncService {
           ? timeBasedSyncEnabled == "1"
               ? true
               : false
-          : false,
+          : true,
       'onConnection': onConnectionAction != null
           ? onConnectionAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onTotp': onTotpAction != null
           ? onTotpAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onRlc': onRlcAction != null
           ? onRlcAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onRac': onRacAction != null
           ? onRacAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onSecret': onSecretAction != null
           ? onSecretAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onIdentity': onIdentityAction != null
           ? onIdentityAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'onPassword': onPasswordAction != null
           ? onPasswordAction == "1"
               ? true
               : false
-          : false,
+          : true,
       'enabled': enabled != null
           ? enabled == "1"
               ? true
               : false
-          : false,
+          : true,
       'onAction': onAction != null
           ? onAction == "1"
               ? true
               : false
-          : false,
+          : true,
     };
   }
 }
