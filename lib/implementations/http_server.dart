@@ -68,7 +68,7 @@ class HttpServer implements IHttpServer {
     var sslData = await _certificateService.get();
     var certData = sslData["Certificate"] as ByteData;
     var keyData = sslData["Key"] as ByteData;
-
+    var port = await _localNetworkService.getPort();
     _app = Router();
 
     _app.get("/ping", (Request request) async {
@@ -282,7 +282,7 @@ class HttpServer implements IHttpServer {
     _server = await io.serve(
       _app,
       '0.0.0.0',
-      9787,
+      port,
       securityContext: dio.SecurityContext()
         ..useCertificateChainBytes(certData.buffer.asUint8List())
         ..usePrivateKeyBytes(

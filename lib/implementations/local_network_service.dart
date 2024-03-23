@@ -24,6 +24,8 @@ class LocalNetworkService implements ILocalNetworkService {
   late ISessionService _sessionService;
   late IDevicesService _devicesService;
 
+  int _defaultPort = 9787;
+
   LocalNetworkService(
     IHttpProviderService httpProviderService,
     ISignatureService signatureService,
@@ -294,6 +296,28 @@ class LocalNetworkService implements ILocalNetworkService {
   Future<bool> overrideDeviceName(String name) async {
     try {
       await _storage.set("device_name", name);
+      return true;
+    } catch (ex) {
+      return false;
+    }
+  }
+
+  @override
+  Future<int> getPort() async {
+    try {
+      var port = await _storage.get("port");
+      if (port == null) return _defaultPort;
+
+      return int.parse(port);
+    } catch (ex) {
+      return _defaultPort;
+    }
+  }
+
+  @override
+  Future<bool> setPort(String number) async {
+    try {
+      await _storage.set("port", number.toString());
       return true;
     } catch (ex) {
       return false;
