@@ -59,7 +59,7 @@ class AutherizationService implements IAuthorizationService {
     var val = await _localStorage.get("lock_value");
     if (val == null) return false;
 
-    var validCode = _otpService.getCode(val);
+    var validCode = _otpService.getCode(val, 30);
     return validCode == code;
   }
 
