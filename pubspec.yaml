@@ -30,6 +30,7 @@ dependencies:
   asn1lib: ^1.5.2
   dart_jsonwebtoken: ^2.13.0
   basic_utils: ^5.7.0
+  archive: ^3.4.10
 
 dev_dependencies:
   flutter_test:
