@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io' as dio;
 
 import 'package:collection/collection.dart';
@@ -9,6 +10,7 @@ import 'package:infrastructure/interfaces/ichallanage_service.dart';
 import 'package:infrastructure/interfaces/ihttp_server.dart';
 import 'package:infrastructure/interfaces/iidentity_manager.dart';
 import 'package:infrastructure/interfaces/ilocal_network_service.dart';
+import 'package:infrastructure/interfaces/iobserver.dart';
 import 'package:infrastructure/interfaces/iotp_service.dart';
 import 'package:infrastructure/interfaces/isecret_manager.dart';
 import 'package:infrastructure/interfaces/isignature_service.dart';
@@ -33,6 +35,7 @@ class HttpServer implements IHttpServer {
   late IOtpService _otpService;
   late ISyncService _syncService;
   late ICertificateService _certificateService;
+  late IObserver _observer;
   dio.HttpServer? _server;
   late Router _app;
 
@@ -45,7 +48,8 @@ class HttpServer implements IHttpServer {
       IIdentityManager identityManager,
       IOtpService otpService,
       ISyncService syncService,
-      ICertificateService certificateService) {
+      ICertificateService certificateService,
+      IObserver observer) {
     _localNetworkService = localNetworkService;
     _signatureService = signatureService;
     _challangeService = challangeService;
@@ -55,6 +59,7 @@ class HttpServer implements IHttpServer {
     _otpService = otpService;
     _syncService = syncService;
     _certificateService = certificateService;
+    _observer = observer;
   }
 
   @override
@@ -69,6 +74,8 @@ class HttpServer implements IHttpServer {
     var certData = sslData["Certificate"] as ByteData;
     var keyData = sslData["Key"] as ByteData;
     var port = await _localNetworkService.getPort();
+    String? keyPassword = await _certificateService.getKeyPassword();
+    var systemIp = await _localNetworkService.getLocalAddress();
     _app = Router();
 
     _app.get("/ping", (Request request) async {
@@ -102,7 +109,6 @@ class HttpServer implements IHttpServer {
       var challange = _challangeService.getChallange(json["publicKey"]);
       var sigData = BianaryConverter.hexStringToList(json['signature']);
       var pkBytes = BianaryConverter.hexStringToList(json["publicKey"]);
-
       var isAuthentinicationValid = await _signatureService.verifySignature(
         BianaryConverter.hexStringToList(challange),
         Signature(
@@ -279,17 +285,30 @@ class HttpServer implements IHttpServer {
       return Response.ok(jsonData);
     });
 
-    _server = await io.serve(
-      _app,
-      '0.0.0.0',
-      port,
-      securityContext: dio.SecurityContext()
-        ..useCertificateChainBytes(certData.buffer.asUint8List())
-        ..usePrivateKeyBytes(
-          keyData.buffer.asUint8List(),
-        ),
-    );
-    print("Server is running on 0.0.0.0:9787");
+    try {
+      _server = await io.serve(
+        _app,
+        '0.0.0.0',
+        port,
+        securityContext: dio.SecurityContext()
+          ..useCertificateChainBytes(certData.buffer.asUint8List())
+          ..usePrivateKeyBytes(
+            keyData.buffer.asUint8List(),
+            password: keyPassword,
+          ),
+      );
+    } catch (ex) {
+      //We default to the system certificate in case there is an exception with a user overloaded Certificate
+      systemDefaults(port);
+      _observer.getObserver("callbackName", {
+        "title": "Imported Certificate",
+        "message":
+            "Failed to start pairing server with the imported certificate, defaulting to system certificates!",
+        "exception": ex,
+      });
+    }
+
+    print("Server is running on ${systemIp}:${port}");
   }
 
   @override
@@ -297,5 +316,31 @@ class HttpServer implements IHttpServer {
     if (_server == null) return;
 
     await _server?.close(force: true);
+  }
+
+  void systemDefaults(int port) async {
+    try {
+      var defaultSslData = await _certificateService.get();
+      var defaultCertData = defaultSslData["Certificate"] as ByteData;
+      var defaultKeyData = defaultSslData["Key"] as ByteData;
+
+      _server = await io.serve(
+        _app,
+        '0.0.0.0',
+        port,
+        securityContext: dio.SecurityContext()
+          ..useCertificateChainBytes(defaultCertData.buffer.asUint8List())
+          ..usePrivateKeyBytes(
+            defaultKeyData.buffer.asUint8List(),
+          ),
+      );
+    } catch (ex) {
+      _observer.getObserver("callbackName", {
+        "title": "Pair server critical failure",
+        "message":
+            "Failed to start pairing server with the system default certificates, please contact support!",
+        "exception": ex,
+      });
+    }
   }
 }
