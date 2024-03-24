@@ -23,7 +23,9 @@ class OtpService implements IOtpService {
     var code = OTP.generateTOTPCodeString(
       current.secret,
       DateTime.now().millisecondsSinceEpoch,
+      interval: current.interval ?? 30,
     );
+
     current.code = code;
 
     return current;
@@ -42,10 +44,11 @@ class OtpService implements IOtpService {
   }
 
   @override
-  String getCode(String secret) {
+  String getCode(String secret, int interval) {
     return OTP.generateTOTPCodeString(
       secret,
       DateTime.now().toUtc().millisecondsSinceEpoch,
+      interval: interval,
     );
   }
 
