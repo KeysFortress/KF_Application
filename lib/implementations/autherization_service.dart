@@ -7,6 +7,10 @@ import 'package:infrastructure/interfaces/iotp_service.dart';
 class AutherizationService implements IAuthorizationService {
   late IOtpService _otpService;
   late IlocalStorage _localStorage;
+  bool _ignoreLock = false;
+  @override
+  bool get ignoreLock => ignoreLock;
+
   AutherizationService(IOtpService otpService, IlocalStorage storage) {
     _otpService = otpService;
     _localStorage = storage;
@@ -190,5 +194,17 @@ class AutherizationService implements IAuthorizationService {
     if (val == null) return false;
 
     return val == "1";
+  }
+
+  @override
+  bool setIgnoreState() {
+    _ignoreLock = true;
+    return true;
+  }
+
+  @override
+  bool cancelIgnoreLockState() {
+    _ignoreLock = false;
+    return true;
   }
 }
