@@ -53,17 +53,21 @@ class OtpService implements IOtpService {
   }
 
   Future<List<OtpCode>> getOtpData() async {
-    var otpData = await localStorage.get("otp_data");
-    if (otpData == null) return [];
+    try {
+      var otpData = await localStorage.get("otp_data");
+      if (otpData == null) return [];
 
-    List<dynamic> data = jsonDecode(otpData);
-    List<OtpCode> result = [];
-    data.forEach((element) {
-      var current = OtpCode.fromJson(element);
-      result.add(current);
-    });
+      List<dynamic> data = jsonDecode(otpData);
+      List<OtpCode> result = [];
+      data.forEach((element) {
+        var current = OtpCode.fromJson(element);
+        result.add(current);
+      });
 
-    return result;
+      return result;
+    } catch (ex) {
+      return [];
+    }
   }
 
   Future<bool> saveData(List<OtpCode> result) async {
