@@ -24,6 +24,8 @@ class OtpService implements IOtpService {
       current.secret,
       DateTime.now().millisecondsSinceEpoch,
       interval: current.interval ?? 30,
+      algorithm: current.algorithm ?? Algorithm.SHA1,
+      length: current.lenght ?? 6,
     );
 
     current.code = code;
