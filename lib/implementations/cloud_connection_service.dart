@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:domain/models/cloud_connection_code.dart';
 import 'package:infrastructure/interfaces/icloud_service.dart';
 import 'package:infrastructure/interfaces/ihttp_provider_service.dart';
@@ -20,26 +21,35 @@ class CloudConnectionService implements ICloudService {
     _signatureService = signatureService;
   }
 
-  @override
-  Future<String> initConnection(CloudConnectionCode code) async {
-    var identity = await _signatureService.generatePrivateKey();
-    var signature = await _signatureService.signMessage(identity, code.secret);
-    var pk = await identity.extractPublicKey();
-    var base64PublicKey = base64.encode(pk.bytes);
-    var response = await _providerService.postRequest(
+  Future<CloudConnectionCode?> begin(String setupUrl) async {
+    var identity = await getOrCreateIdentity();
+    var publicKeyData = await identity.extractPublicKey();
+    var publicKeyBase64 = base64.encode(publicKeyData.bytes);
+    var request = await _providerService.postRequest(
+      isAuthenticated: false,
       HttpRequest(
-        code.setupUrl,
+        setupUrl,
         {},
         jsonEncode({
           "Email": "kristiformilchev@outlook.com",
-          "PublicKey": base64PublicKey
+          "Base64Pk": publicKeyBase64,
         }),
       ),
     );
 
-    if (response == null || response.statusCode != 200) {
-      return "";
-    }
+    if (request == null || request.statusCode != 200) return null;
+
+    var json = jsonDecode(request.body);
+
+    return CloudConnectionCode.fromJson(json);
+  }
+
+  @override
+  Future<String> initConnection(CloudConnectionCode code) async {
+    var identity = await getOrCreateIdentity();
+    var publicKeyData = await identity.extractPublicKey();
+    var publicKeyBase64 = base64.encode(publicKeyData.bytes);
+    var signature = await _signatureService.signMessage(identity, code.secret);
 
     var currentConnections = await connections();
     if (currentConnections
@@ -95,5 +105,37 @@ class CloudConnectionService implements ICloudService {
     }
 
     return cloudData;
+  }
+
+  Future<SimpleKeyPair> getOrCreateIdentity() async {
+    var identity = await _localStorage.get("cloud-connection-identity");
+    if (identity == null) return createIdenitity();
+
+    var identityData = jsonDecode(identity);
+
+    return await _signatureService.importKeyPair(
+      identityData["publicKey"],
+      identityData["privateKey"],
+    );
+  }
+
+  Future<SimpleKeyPair> createIdenitity() async {
+    var identity = await _signatureService.generatePrivateKey();
+    var publicKey = await identity.extractPublicKey();
+    var privateKey = await identity.extractPrivateKeyBytes();
+    var base64PublicKey = base64.encode(publicKey.bytes);
+    var base64PrivateKey = base64.encode(privateKey);
+
+    await _localStorage.set(
+      "cloud-connection-identity",
+      jsonEncode(
+        {
+          "publicKey": base64PublicKey,
+          "privateKey": base64PrivateKey,
+        },
+      ),
+    );
+
+    return identity;
   }
 }
