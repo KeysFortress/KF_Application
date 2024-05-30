@@ -57,7 +57,7 @@ class CloudConnectionService implements ICloudService {
         null) {
       currentConnections.add(code);
     }
-    var json = currentConnections.map((e) => e.toJson());
+    var json = currentConnections.map((e) => e.toJson()).toList();
     var encoded = jsonEncode(json);
 
     _localStorage.set("cloud-connections", encoded);
