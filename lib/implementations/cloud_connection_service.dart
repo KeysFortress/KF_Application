@@ -47,8 +47,6 @@ class CloudConnectionService implements ICloudService {
   @override
   Future<String> initConnection(CloudConnectionCode code) async {
     var identity = await getOrCreateIdentity();
-    var publicKeyData = await identity.extractPublicKey();
-    var publicKeyBase64 = base64.encode(publicKeyData.bytes);
     var signature = await _signatureService.signMessage(identity, code.secret);
 
     var currentConnections = await connections();
