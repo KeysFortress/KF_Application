@@ -3,6 +3,7 @@ import 'package:domain/models/enums.dart';
 import 'package:infrastructure/interfaces/iauthorization_service.dart';
 import 'package:infrastructure/interfaces/ilocal_storage.dart';
 import 'package:infrastructure/interfaces/iotp_service.dart';
+import 'package:otp/otp.dart';
 
 class AutherizationService implements IAuthorizationService {
   late IOtpService _otpService;
@@ -59,7 +60,11 @@ class AutherizationService implements IAuthorizationService {
     var val = await _localStorage.get("lock_value");
     if (val == null) return false;
 
-    var validCode = _otpService.getCode(val, 30);
+    var validCode = _otpService.getCode(
+      val,
+      30,
+      Algorithm.SHA1,
+    );
     return validCode == code;
   }
 

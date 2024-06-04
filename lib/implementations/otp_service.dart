@@ -46,11 +46,15 @@ class OtpService implements IOtpService {
   }
 
   @override
-  String getCode(String secret, int interval) {
+  String getCode(String secret, int interval, Algorithm? algorithm) {
+    final currentTime = DateTime.now().toUtc().millisecondsSinceEpoch;
+    print("Current UTC Time in milliseconds: $currentTime");
+
     return OTP.generateTOTPCodeString(
       secret,
-      DateTime.now().toUtc().millisecondsSinceEpoch,
+      currentTime,
       interval: interval,
+      algorithm: algorithm ?? Algorithm.SHA512,
     );
   }
 
