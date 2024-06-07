@@ -22,10 +22,11 @@ class OtpService implements IOtpService {
 
     var code = OTP.generateTOTPCodeString(
       current.secret,
-      DateTime.now().millisecondsSinceEpoch,
+      DateTime.now().toUtc().millisecondsSinceEpoch,
       interval: current.interval ?? 30,
       algorithm: current.algorithm ?? Algorithm.SHA1,
       length: current.lenght ?? 6,
+      isGoogle: true,
     );
 
     current.code = code;
@@ -47,15 +48,19 @@ class OtpService implements IOtpService {
 
   @override
   String getCode(String secret, int interval, Algorithm? algorithm) {
-    final currentTime = DateTime.now().toUtc().millisecondsSinceEpoch;
-    print("Current UTC Time in milliseconds: $currentTime");
+    final time = DateTime.now()
+        .toUtc()
+        .millisecondsSinceEpoch; // Current time in milliseconds
 
-    return OTP.generateTOTPCodeString(
-      secret,
-      currentTime,
+    final code = OTP.generateTOTPCodeString(
+      secret, time,
       interval: interval,
-      algorithm: algorithm ?? Algorithm.SHA512,
+      length: 6, // Adjust if the length is different
+      isGoogle: true,
+      algorithm: Algorithm.SHA512,
     );
+
+    return code;
   }
 
   Future<List<OtpCode>> getOtpData() async {
