@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
@@ -63,13 +64,22 @@ class CloudConnectionService implements ICloudService {
   }
 
   @override
-  Future<bool> connect(CloudConnectionCode code, String signature) async {
+  Future<bool> connect(
+      CloudConnectionCode code, String signature, String deviceName) async {
+    int deviceTypeId = getDeviceTypeId();
+    if (deviceTypeId == -1) throw Exception("Platform not supported");
+
     var result = await _providerService.postRequest(
       HttpRequest(
         code.setupUrl,
         {},
         jsonEncode(
-          {"Signature": signature, "Uuid": code.id},
+          {
+            "Signature": signature,
+            "Uuid": code.id,
+            "DeviceName": deviceName,
+            "DeviceType": deviceTypeId
+          },
         ),
       ),
     );
@@ -135,5 +145,15 @@ class CloudConnectionService implements ICloudService {
     );
 
     return identity;
+  }
+
+  int getDeviceTypeId() {
+    if (Platform.isAndroid) return 1;
+    if (Platform.isIOS) return 2;
+    if (Platform.isWindows) return 3;
+    if (Platform.isLinux) return 4;
+    if (Platform.isMacOS) return 5;
+
+    return -1;
   }
 }
