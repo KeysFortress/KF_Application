@@ -156,4 +156,80 @@ class CloudConnectionService implements ICloudService {
 
     return -1;
   }
+
+  Future<bool> login(CloudConnectionCode data) async {
+    var getCredentials = await getOrCreateIdentity();
+    var challangeData = await getChallange(data);
+
+    var json = jsonDecode(challangeData);
+
+    var code = json["Code"];
+    var uuid = json["Uuid"];
+
+    var signature = _signatureService.signMessage(getCredentials, code);
+
+    var response = await _providerService.postRequest(
+      HttpRequest(
+        "${data.url}/finish-reques",
+        {},
+        jsonEncode(
+          {
+            "Signature": signature,
+            "Uuid": uuid,
+          },
+        ),
+      ),
+    );
+
+    if (response == null || response.statusCode != 200) return false;
+
+    await _localStorage.set("${data.url}-mfa", response.body);
+    return true;
+  }
+
+  @override
+  Future<String> getBearer(CloudConnectionCode token) async {
+    var authToken = await _localStorage.get("bearer-${token.url}");
+    if (authToken == null) return "";
+
+    return authToken;
+  }
+
+  @override
+  Future<bool> performMethod(String code, CloudConnectionCode data) async {
+    var mfaToken = await _localStorage.get("${data.url}-mfa");
+    if (mfaToken == null) return false;
+
+    var response = await _providerService.postRequest(
+      isAuthenticated: false,
+      HttpRequest(
+        "${data.url}/mfa/perform-method",
+        {"Authorization": "Bearer $mfaToken"},
+        jsonEncode(
+          {
+            "Code": code,
+          },
+        ),
+      ),
+    );
+
+    if (response == null || response.statusCode != 200) return false;
+
+    _localStorage.set("bearer-${data.url}", response.body);
+    return true;
+  }
+
+  Future<String> getChallange(CloudConnectionCode data) async {
+    var response = await _providerService.getRequest(
+      HttpRequest(
+        "${data.url}/begin-request/kristiformilchev@outlook.com",
+        {},
+        {},
+      ),
+    );
+
+    if (response == null || response.statusCode != 200) return "";
+
+    return response.body;
+  }
 }
